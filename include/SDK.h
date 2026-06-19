@@ -90,7 +90,7 @@ typedef size_t Usize;
 // NOTE: Math.
 //
 
-#define Kilobytes(x) (x * 1024)
+#define Kilobytes(x) ((x) * 1024)
 
 #define Min(a, b) (((a) < (b)) ? (a) : (b))
 #define Max(a, b) (((a) > (b)) ? (a) : (b))
@@ -98,7 +98,6 @@ typedef size_t Usize;
 
 #define Abs(x) (((x) < 0) ? -(x) : (x))
 
-#define SquareRoot(x) __builtin_sqrtf(x)
 #define Floor(x) __builtin_floorf(x)
 #define CopySign(magnitude, sign) __builtin_copysignf((magnitude), (sign))
 
