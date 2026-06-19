@@ -90,10 +90,10 @@ PackedItem Atlas::PlaceImage(Uint32 current_x, Uint32 current_y, Image &image)
 
 void Atlas::Pack(Image *images, Uint32 image_count)
 {
-    Uint32 current_x = 0;
-    Uint32 current_y = 0;
+    Uint32 x = 0;
+    Uint32 y = 0;
 
-    Uint32 max_height = 0;
+    Uint32 maximum_height = 0;
 
     Uint32 items_capacity = 5;
     this->items = (PackedItem *)malloc(sizeof(PackedItem) * items_capacity);
@@ -103,19 +103,20 @@ void Atlas::Pack(Image *images, Uint32 image_count)
         Image &image = images[i];
 
         PackedItem item;
-        if (current_x + image.width <= this->image.width)
+        if (x + image.width <= this->image.width)
         {
-            max_height = Max(image.height, max_height);
+            maximum_height = Max(image.height, maximum_height);
 
-            item = this->PlaceImage(current_x, current_y, image);
+            item = this->PlaceImage(x, y, image);
+            x+= image.width;
         }
         else
         {
-            current_x = 0;
-            current_y += max_height;
-            max_height = 0;
+            x = 0;
+            y += maximum_height;
+            maximum_height = 0;
 
-            item = this->PlaceImage(current_x, current_y, image);
+            item = this->PlaceImage(x, y, image);
         }
 
         if (this->item_count + 1 > items_capacity)
@@ -161,8 +162,8 @@ int main(int argc, char **argv)
             continue;
         }
 
-        images[image_index++].width = (Uint32)width;
-        images[image_index++].height = (Uint32)height;
+        images[image_index].width = (Uint32)width;
+        images[image_index].height = (Uint32)height;
         images[image_index++].pixels = data;
     }
 
@@ -180,10 +181,10 @@ int main(int argc, char **argv)
         pixel[3] = 255;
     }
 
-    stbi_write_png("atlas.png", atlas.image.width, atlas.image.height, 4, atlas.image.pixels, atlas.image.width * 4);
-
     atlas.Pack(images, image_count);
     atlas.WriteData("atlas.dat");
+
+    stbi_write_png("atlas.png", atlas.image.width, atlas.image.height, 4, atlas.image.pixels, atlas.image.width * 4);
 
     free(images);
     return 0;
