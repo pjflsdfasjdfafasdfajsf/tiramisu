@@ -103,6 +103,10 @@ typedef size_t Usize;
 
 #define SquareRoot(x) __builtin_sqrtf(x)
 
+#define IsPowerOfTwo(x) (((x) != 0) && (((x) & ((x) - 1)) == 0))
+/// alignment' MUST be a power of two
+#define AlignUp(value, alignment) (((value) + ((alignment) - 1)) & ~((alignment) - 1))
+
 typedef struct Vector2 {
     union {
         struct {
@@ -415,12 +419,20 @@ typedef struct RenderCommandBuffer {
 
 /// Pushes raw bytes to command buffer. Prefer using helpers instead.
 static inline void *RenderCommandBuffer_Push(RenderCommandBuffer *buffer, Uint32 memory_bytes_needed) {
-    bool has_enough_space = (buffer->size + memory_bytes_needed) <= buffer->capacity;
+    Uint32 alignment = 4; 
+    Assert(IsPowerOfTwo(alignment));
+
+    Uint32 aligned_bytes_needed = AlignUp(memory_bytes_needed, alignment);
+
+    bool has_enough_space = (buffer->size + aligned_bytes_needed) <= buffer->capacity;
     Assert(has_enough_space);
 
     if (has_enough_space) {
-        void *address = buffer->memory + buffer->size;
-        buffer->size += memory_bytes_needed;
+        Uint32 current_aligned_offset = AlignUp(buffer->size, alignment);
+        void *address = buffer->memory + current_aligned_offset;
+        
+        buffer->size = current_aligned_offset + aligned_bytes_needed;
+        
         return address;
     }
 
