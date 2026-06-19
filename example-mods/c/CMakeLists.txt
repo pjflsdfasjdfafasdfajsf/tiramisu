@@ -9,7 +9,7 @@ add_executable(dependency src/dependency.c)
 foreach(target example-mod dependency)
     set_target_properties(${target} PROPERTIES SUFFIX ".wasm")
     target_compile_options(${target} PRIVATE -nostdlib)
-    target_include_directories(${target} PRIVATE ../include)
+    target_include_directories(${target} PRIVATE ../../sdk)
     target_link_options(${target} PRIVATE
         -nostdlib
         -Wl,--no-entry

@@ -27,7 +27,7 @@ file(GLOB SOURCES "src/*.cpp")
 add_executable(tiramisu ${SOURCES})
 
 target_include_directories(tiramisu PRIVATE
-    include
+    sdk
     ${wasm3_SOURCE_DIR}/source
 )
 
