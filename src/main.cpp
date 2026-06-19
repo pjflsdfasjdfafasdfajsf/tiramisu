@@ -11,7 +11,7 @@
 
 #define DEFAULT_MODS_DIRECTORY "mods"
 
-static const char default_input_txt[] = 
+static const char default_input_txt[] =
     "###########################################################################################\n"
     "#                                                                                         #\n"
     "# Default input bindings.                                                                 #\n"
@@ -54,11 +54,13 @@ static const char default_input_txt[] =
     "hook  = e\n"
     "dash  = left shift\n";
 
-const char *GetAbsolutePath(const char *file) {
+const char *GetAbsolutePath(const char *file)
+{
     static char buffer[1024];
     const char *base = SDL_GetBasePath();
 
-    if (!base) {
+    if (!base)
+    {
         SDL_Log("SDL_GetBasePath failed: %s\n", SDL_GetError());
         SDL_snprintf(buffer, sizeof(buffer), "%s", file);
 
@@ -73,25 +75,28 @@ const char *GetAbsolutePath(const char *file) {
 void WriteDefaultInputConfig(void)
 {
     bool exists = SDL_IOFromFile(GetAbsolutePath("input.txt"), "r");
-    if (exists) {
+    if (exists)
+    {
         SDL_Log("input.txt already exists\n");
         return;
     }
 
     SDL_IOStream *io = SDL_IOFromFile(GetAbsolutePath("input.txt"), "w");
-    if (!io) {
-        return; 
+    if (!io)
+    {
+        return;
     }
 
     size_t length = sizeof(default_input_txt) - 1;
     size_t written = SDL_WriteIO(io, default_input_txt, length);
-    
+
     Assert(written == length);
 
     SDL_CloseIO(io);
 }
 
-float GetDeltaSeconds() {
+float GetDeltaSeconds()
+{
     static Uint64 last_frame_ticks = SDL_GetTicks();
 
     Uint64 this_frame_ticks = SDL_GetTicks();
@@ -101,30 +106,39 @@ float GetDeltaSeconds() {
     return delta_seconds;
 }
 
-static Action *GetActionByName(State &state, wasm::Context &wasm, const char *name) {
+static Action *GetActionByName(State &state, wasm::Context &wasm, const char *name)
+{
     Assert(name);
 
-    if (SDL_strcmp(name, "jump") == 0) {
-      return &state.input.jump;
+    if (SDL_strcmp(name, "jump") == 0)
+    {
+        return &state.input.jump;
     }
-    if (SDL_strcmp(name, "dash") == 0) {
-      return &state.input.dash;
+    if (SDL_strcmp(name, "dash") == 0)
+    {
+        return &state.input.dash;
     }
-    if (SDL_strcmp(name, "slam") == 0) {
-      return &state.input.slam;
+    if (SDL_strcmp(name, "slam") == 0)
+    {
+        return &state.input.slam;
     }
-    if (SDL_strcmp(name, "hook") == 0) {
-      return &state.input.hook;
+    if (SDL_strcmp(name, "hook") == 0)
+    {
+        return &state.input.hook;
     }
-    if (SDL_strcmp(name, "left") == 0) {
-      return &state.input.left;
+    if (SDL_strcmp(name, "left") == 0)
+    {
+        return &state.input.left;
     }
-    if (SDL_strcmp(name, "right") == 0) {
-      return &state.input.right;
+    if (SDL_strcmp(name, "right") == 0)
+    {
+        return &state.input.right;
     }
 
-    for (Int32 i = 0; i < wasm.custom_action_count; ++i) {
-        if (SDL_strcmp(wasm.custom_action_names[i], name) == 0) {
+    for (Int32 i = 0; i < wasm.custom_action_count; ++i)
+    {
+        if (SDL_strcmp(wasm.custom_action_names[i], name) == 0)
+        {
             return &state.input.custom[i];
         }
     }
@@ -132,24 +146,29 @@ static Action *GetActionByName(State &state, wasm::Context &wasm, const char *na
     return 0;
 }
 
-static void ApplyBindings(App &app, inputmap::Binding *bindings, Uint32 count, const char *source) {
-    if (count == 0) {
+static void ApplyBindings(App &app, inputmap::Binding *bindings, Uint32 count, const char *source)
+{
+    if (count == 0)
+    {
         return;
     }
 
     Assert(bindings);
 
-    for (Uint32 i = 0; i < count; i++) {
+    for (Uint32 i = 0; i < count; i++)
+    {
         inputmap::Binding *binding = &bindings[i];
         SDL_Scancode scancode = SDL_GetScancodeFromName(binding->key);
 
-        if (scancode == SDL_SCANCODE_UNKNOWN) {
+        if (scancode == SDL_SCANCODE_UNKNOWN)
+        {
             SDL_Log("unknown key '%s' (from %s)\n", binding->key, source);
             continue;
         }
 
         Action *action = GetActionByName(app.state, *app.wasm, binding->action);
-        if (!action) {
+        if (!action)
+        {
             SDL_Log("unknown action '%s' (from %s)\n", binding->action, source);
             continue;
         }
@@ -160,24 +179,31 @@ static void ApplyBindings(App &app, inputmap::Binding *bindings, Uint32 count, c
     }
 }
 
-static bool IsActionBound(inputmap::Bindings *bindings, const char *action) {
-    for (Uint32 i = 0; i < bindings->count; i++) {
-        if (SDL_strcmp(bindings->items[i].action, action) == 0) {
+static bool IsActionBound(inputmap::Bindings *bindings, const char *action)
+{
+    for (Uint32 i = 0; i < bindings->count; i++)
+    {
+        if (SDL_strcmp(bindings->items[i].action, action) == 0)
+        {
             return true;
         }
     }
     return false;
 }
 
-static bool AppendMissingBinding(SDL_IOStream **stream, inputmap::Bindings *user_bindings, const char *action, const char *key) {
-    if (IsActionBound(user_bindings, action)) {
+static bool AppendMissingBinding(SDL_IOStream **stream, inputmap::Bindings *user_bindings, const char *action, const char *key)
+{
+    if (IsActionBound(user_bindings, action))
+    {
         return false;
     }
 
-    if (!*stream) {
+    if (!*stream)
+    {
         *stream = SDL_IOFromFile(GetAbsolutePath("input.txt"), "a");
 
-        if (!*stream) {
+        if (!*stream)
+        {
             SDL_Log("SDL_IOFromFile: %s\n", SDL_GetError());
             return false;
         }
@@ -187,11 +213,12 @@ static bool AppendMissingBinding(SDL_IOStream **stream, inputmap::Bindings *user
     Int32 length = SDL_snprintf(line, sizeof(line), "%s = %s\n", action, key);
     Usize written = SDL_WriteIO(*stream, line, length);
     Assert(written == (Usize)length);
-    
+
     return true;
 }
 
-App App::Initialize() {
+App App::Initialize()
+{
     App app = {};
 
     SDL_Log("base path: %s\n", SDL_GetBasePath());
@@ -199,18 +226,21 @@ App App::Initialize() {
 
     SDL_Log("state struct size: %lu", sizeof(State));
 
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
+    if (!SDL_Init(SDL_INIT_VIDEO))
+    {
         SDL_Log("SDL_Init: %s\n", SDL_GetError());
         return app;
     }
 
-    if (!SDL_CreateWindowAndRenderer("tiramisu", DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE, &app.window, &app.renderer)) {
+    if (!SDL_CreateWindowAndRenderer("tiramisu", DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE, &app.window, &app.renderer))
+    {
         SDL_Log("SDL_CreateWindowAndRenderer: %s\n", SDL_GetError());
         return app;
     }
 
     app.wasm = (wasm::Context *)SDL_calloc(1, sizeof(wasm::Context));
-    if (!wasm::Initialize(app.wasm, GetAbsolutePath(DEFAULT_MODS_DIRECTORY))) {
+    if (!wasm::Initialize(app.wasm, GetAbsolutePath(DEFAULT_MODS_DIRECTORY)))
+    {
         return app;
     }
 
@@ -220,17 +250,20 @@ App App::Initialize() {
     app.buffer.capacity = Kilobytes(64);
     app.buffer.memory = (Uint8 *)SDL_malloc(app.buffer.capacity);
 
-    if (!app.buffer.memory) {
+    if (!app.buffer.memory)
+    {
         return app;
     }
 
     app.state = State::Initialize();
-    if (!app.state.ok) {
+    if (!app.state.ok)
+    {
         return app;
     }
 
     // NOTE: I don't want to segfault on unmapped keys :(
-    for (Int32 i = 0; i < SDL_SCANCODE_COUNT; i++) {
+    for (Int32 i = 0; i < SDL_SCANCODE_COUNT; i++)
+    {
         app.keys[i] = NULL;
     }
 
@@ -245,32 +278,37 @@ App App::Initialize() {
     Assert(file_content);
 
     bindings.Read(file_content);
-    
+
     ApplyBindings(app, bindings.items, bindings.count, "input.txt");
 
     SDL_IOStream *stream = 0;
 
     char *default_input_txt_copy = SDL_strdup(default_input_txt);
-    if (default_input_txt_copy) {
+    if (default_input_txt_copy)
+    {
         inputmap::Bindings defaults = inputmap::Bindings::Initialize(128);
         defaults.Read(default_input_txt_copy);
 
-        for (Uint32 i = 0; i < defaults.count; i++) {
+        for (Uint32 i = 0; i < defaults.count; i++)
+        {
             inputmap::Binding *binding = &defaults.items[i];
-            
-            if (AppendMissingBinding(&stream, &bindings, binding->action, binding->key)) {
+
+            if (AppendMissingBinding(&stream, &bindings, binding->action, binding->key))
+            {
                 ApplyBindings(app, binding, 1, "Appended Engine Default");
             }
         }
         SDL_free(default_input_txt_copy);
     }
 
-    for (Int32 i = 0; i < app.wasm->default_binding_count; i++) {
+    for (Int32 i = 0; i < app.wasm->default_binding_count; i++)
+    {
         inputmap::Binding *binding = &app.wasm->default_bindings[i];
         AppendMissingBinding(&stream, &bindings, binding->action, binding->key);
     }
 
-    if (stream) {
+    if (stream)
+    {
         SDL_CloseIO(stream);
         SDL_Log("updated your config\n");
     }
@@ -279,21 +317,27 @@ App App::Initialize() {
     return app;
 }
 
-void AssertDidNotReadPastEnd(Uint8 *current, Uint8 *end, Uint64 size) {
-    if (current + size > end) {
+void AssertDidNotReadPastEnd(Uint8 *current, Uint8 *end, Uint64 size)
+{
+    if (current + size > end)
+    {
         Assert(0);
     }
 }
 
-void App::Draw() {
+void App::Draw()
+{
     Uint8 *current = buffer.memory;
     Uint8 *end = buffer.memory + buffer.size;
 
-    while (current < end) {
+    while (current < end)
+    {
         RenderCommandType type = *(RenderCommandType *)current;
 
-        switch (type) {
-        case RenderCommandType_ClearScreen: {
+        switch (type)
+        {
+        case RenderCommandType_ClearScreen:
+        {
             AssertDidNotReadPastEnd(current, end, sizeof(RenderCommand_ClearScreen));
 
             RenderCommand_ClearScreen *command = (RenderCommand_ClearScreen *)current;
@@ -301,9 +345,11 @@ void App::Draw() {
             SDL_RenderClear(renderer);
 
             current += sizeof(RenderCommand_ClearScreen);
-        } break;
+        }
+        break;
 
-        case RenderCommandType_DrawRectangle: {
+        case RenderCommandType_DrawRectangle:
+        {
             AssertDidNotReadPastEnd(current, end, sizeof(RenderCommand_DrawRectangle));
 
             RenderCommand_DrawRectangle *command = (RenderCommand_DrawRectangle *)current;
@@ -311,16 +357,17 @@ void App::Draw() {
                 command->rectangle.position.x,
                 command->rectangle.position.y,
                 command->rectangle.size.width,
-                command->rectangle.size.height
-            };
+                command->rectangle.size.height};
 
             SDL_SetRenderDrawColor(renderer, command->color.red, command->color.green, command->color.blue, command->color.alpha);
             SDL_RenderFillRect(renderer, &rectangle);
 
             current += sizeof(RenderCommand_DrawRectangle);
-        } break;
+        }
+        break;
 
-        case RenderCommandType_DrawLine: {
+        case RenderCommandType_DrawLine:
+        {
             AssertDidNotReadPastEnd(current, end, sizeof(RenderCommand_DrawLine));
 
             RenderCommand_DrawLine *command = (RenderCommand_DrawLine *)current;
@@ -328,14 +375,17 @@ void App::Draw() {
             SDL_RenderLine(renderer, command->start.x, command->start.y, command->end.x, command->end.y);
 
             current += sizeof(RenderCommand_DrawLine);
-        } break;
+        }
+        break;
 
         case RenderCommandType_None:
-        default: {
+        default:
+        {
             SDL_Log("CORRUPTED RENDER BUFFER OR A NOT IMPLEMENTED COMMAND (%d)\n", type);
             Assert(0 && "Invalid render command");
             current = end;
-        } break;
+        }
+        break;
         }
     }
 
@@ -343,8 +393,8 @@ void App::Draw() {
     buffer.size = 0;
 }
 
-
-void App::ClearInputEdges() {
+void App::ClearInputEdges()
+{
     this->state.input.jump.pressed = false;
     this->state.input.jump.released = false;
 
@@ -363,57 +413,75 @@ void App::ClearInputEdges() {
     this->state.input.right.pressed = false;
     this->state.input.right.released = false;
 
-    for (Int32 i = 0; i < this->wasm->custom_action_count; i++) {
+    for (Int32 i = 0; i < this->wasm->custom_action_count; i++)
+    {
         this->state.input.custom[i].pressed = false;
         this->state.input.custom[i].released = false;
     }
 }
 
-bool App::PollEvents() {
+bool App::PollEvents()
+{
     this->ClearInputEdges();
 
     SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        switch (event.type) {
-        case SDL_EVENT_QUIT: {
+    while (SDL_PollEvent(&event))
+    {
+        switch (event.type)
+        {
+        case SDL_EVENT_QUIT:
+        {
             return false;
-        } break;
-        
-        case SDL_EVENT_KEY_DOWN: {
-            if (event.key.repeat) {
+        }
+        break;
+
+        case SDL_EVENT_KEY_DOWN:
+        {
+            if (event.key.repeat)
+            {
                 break;
             }
             SDL_Scancode scancode = event.key.scancode;
-            if (scancode >= 0 && scancode < SDL_SCANCODE_COUNT) {
+            if (scancode >= 0 && scancode < SDL_SCANCODE_COUNT)
+            {
                 Action *action = this->keys[scancode];
 
-                if (action) {
+                if (action)
+                {
                     action->is_down = true;
                     action->pressed = true;
                 }
             }
-        } break;
+        }
+        break;
 
-        case SDL_EVENT_KEY_UP: {
+        case SDL_EVENT_KEY_UP:
+        {
             SDL_Scancode scancode = event.key.scancode;
-            if (scancode >= 0 && scancode < SDL_SCANCODE_COUNT) {
+            if (scancode >= 0 && scancode < SDL_SCANCODE_COUNT)
+            {
                 Action *action = this->keys[scancode];
 
-                if (action) {
+                if (action)
+                {
                     action->is_down = false;
                     action->released = true;
                 }
             }
-        } break;
+        }
+        break;
 
-        default: {
-        } break;
+        default:
+        {
+        }
+        break;
         }
     }
     return true;
 }
 
-void App::Update() {
+void App::Update()
+{
     this->state.time.delta = GetDeltaSeconds();
 
     int width, height;
@@ -421,13 +489,16 @@ void App::Update() {
     this->state.camera.viewport = V2i(width, height);
 }
 
-int main() {
+int main()
+{
     App app = App::Initialize();
-    if (!app.ok) {
+    if (!app.ok)
+    {
         return EXIT_FAILURE;
     }
 
-    while (app.PollEvents()) {
+    while (app.PollEvents())
+    {
         app.Update();
         app.state.Update();
         app.Draw();

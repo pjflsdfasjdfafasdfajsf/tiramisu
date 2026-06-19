@@ -6,9 +6,11 @@
 
 #include "SDK.h"
 
-namespace wasm {
+namespace wasm
+{
 
-struct Metadata {
+struct Metadata
+{
     char name[64];
     char version[16];
     char summary[256];
@@ -16,7 +18,8 @@ struct Metadata {
     bool ok;
 };
 
-struct Module {
+struct Module
+{
     IM3Runtime runtime;
     IM3Module module;
 
@@ -36,7 +39,8 @@ struct Module {
     bool ok;
 };
 
-struct Context {
+struct Context
+{
     IM3Environment environment;
     Module modules[512];
     Int32 module_count;

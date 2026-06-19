@@ -5,25 +5,30 @@
 #define MAP_TILE_SIZE 80
 
 /// Centers the camera on WHO smoothly, clamped to never show past WORLD.
-static void UpdateCamera(Camera &camera, Vector2 target, Vector2i viewport, Vector2 world, Float delta_seconds) {
+static void UpdateCamera(Camera &camera, Vector2 target, Vector2i viewport, Vector2 world, Float delta_seconds)
+{
     Vector2 desired = V2(Clamp(target.x - viewport.x * 0.5f, 0, world.x - viewport.x), Clamp(target.y - viewport.y * 0.5f, 0, world.y - viewport.y));
 
     Float speed = 10.0f;
     camera.position = camera.position + (desired - camera.position) * (speed * delta_seconds);
 }
 
-enum {
+enum
+{
     TILE_EMPTY = 0,
     TILE_SOLID = 1,
     TILE_HOOK = 2,
 };
 
-namespace map {
+namespace map
+{
 /// Returns TRUE if the tile at a given coordinates X, Y is set to 1.
 /// Tiles outside of the map are not considered solid.
-static bool TileIsSolid(State &state, Int32 x, Int32 y) {
+static bool TileIsSolid(State &state, Int32 x, Int32 y)
+{
     bool is_outside_the_map = x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT;
-    if (is_outside_the_map) {
+    if (is_outside_the_map)
+    {
         return false;
     }
 
@@ -31,7 +36,8 @@ static bool TileIsSolid(State &state, Int32 x, Int32 y) {
 }
 
 /// Returns TRUE if the rectangle overlaps any solid tile.
-static bool IsOverlappingSolidTile(State &state, Rectangle rectangle) {
+static bool IsOverlappingSolidTile(State &state, Rectangle rectangle)
+{
     Vector2i first_touched_tile = V2i(
         (Int32)Floor(rectangle.position.x / MAP_TILE_SIZE),
         (Int32)Floor(rectangle.position.y / MAP_TILE_SIZE));
@@ -46,10 +52,13 @@ static bool IsOverlappingSolidTile(State &state, Rectangle rectangle) {
         rectangle.size.width,
         rectangle.size.height};
 
-    for (Int32 y = first_touched_tile.y; y <= last_touched_tile.y; y++) {
-        for (Int32 x = first_touched_tile.x; x <= last_touched_tile.x; x++) {
+    for (Int32 y = first_touched_tile.y; y <= last_touched_tile.y; y++)
+    {
+        for (Int32 x = first_touched_tile.x; x <= last_touched_tile.x; x++)
+        {
 
-            if (!TileIsSolid(state, x, y)) {
+            if (!TileIsSolid(state, x, y))
+            {
                 continue;
             }
 
@@ -60,7 +69,8 @@ static bool IsOverlappingSolidTile(State &state, Rectangle rectangle) {
                 (Float)MAP_TILE_SIZE,
             };
 
-            if (SDL_HasRectIntersectionFloat(&player, &tile)) {
+            if (SDL_HasRectIntersectionFloat(&player, &tile))
+            {
                 return true;
             }
         }
@@ -68,45 +78,55 @@ static bool IsOverlappingSolidTile(State &state, Rectangle rectangle) {
     return false;
 }
 
-static void MoveAndCollide(State &state, Vector2 &position, Vector2 size, Vector2 move) {
+static void MoveAndCollide(State &state, Vector2 &position, Vector2 size, Vector2 move)
+{
     Float position_before_moving_x = position.x;
     position.x += move.x;
-    if (IsOverlappingSolidTile(state, Rectangle::GetCentered(position, size))) {
+    if (IsOverlappingSolidTile(state, Rectangle::GetCentered(position, size)))
+    {
         position.x = position_before_moving_x;
 
         Float direction = CopySign(1.0f, move.x);
-        while (!IsOverlappingSolidTile(state, Rectangle::GetCentered(V2(position.x + direction, position.y), size))) {
+        while (!IsOverlappingSolidTile(state, Rectangle::GetCentered(V2(position.x + direction, position.y), size)))
+        {
             position.x += direction;
         }
     }
 
     Float position_before_moving_y = position.y;
     position.y += move.y;
-    if (IsOverlappingSolidTile(state, Rectangle::GetCentered(position, size))) {
+    if (IsOverlappingSolidTile(state, Rectangle::GetCentered(position, size)))
+    {
         position.y = position_before_moving_y;
 
         Float direction = CopySign(1.0f, move.y);
-        while (!IsOverlappingSolidTile(state, Rectangle::GetCentered(V2(position.x, position.y + direction), size))) {
+        while (!IsOverlappingSolidTile(state, Rectangle::GetCentered(V2(position.x, position.y + direction), size)))
+        {
             position.y += direction;
         }
     }
 }
 
-static bool FindNearestHookWithinRadius(State &state, Vector2 origin, Float radius, Vector2 *out_nearest_hook) {
+static bool FindNearestHookWithinRadius(State &state, Vector2 origin, Float radius, Vector2 *out_nearest_hook)
+{
     bool result = false;
     Float closest_distance_squared = radius * radius;
 
-    for (Int32 y = 0; y < MAP_HEIGHT; y++) {
-        for (Int32 x = 0; x < MAP_WIDTH; x++) {
+    for (Int32 y = 0; y < MAP_HEIGHT; y++)
+    {
+        for (Int32 x = 0; x < MAP_WIDTH; x++)
+        {
             bool is_hook_tile = (state.map.grid[y][x] == TILE_HOOK);
 
-            if (is_hook_tile) {
+            if (is_hook_tile)
+            {
                 Vector2 center = V2((Float)(x * MAP_TILE_SIZE) + (MAP_TILE_SIZE * 0.5f), (Float)(y * MAP_TILE_SIZE) + (MAP_TILE_SIZE * 0.5f));
 
                 Float distance_squared = GetDistanceSquared(origin, center);
                 bool is_closer_than_previous = (distance_squared <= closest_distance_squared);
 
-                if (is_closer_than_previous) {
+                if (is_closer_than_previous)
+                {
                     closest_distance_squared = distance_squared;
                     *out_nearest_hook = center;
                     result = true;
@@ -120,12 +140,15 @@ static bool FindNearestHookWithinRadius(State &state, Vector2 origin, Float radi
 
 } // namespace map
 
-
-static void DrawMap(State &state, RenderCommandBuffer &buffer) {
-    for (Int32 y = 0; y < MAP_HEIGHT; y++) {
-        for (Int32 x = 0; x < MAP_WIDTH; x++) {
+static void DrawMap(State &state, RenderCommandBuffer &buffer)
+{
+    for (Int32 y = 0; y < MAP_HEIGHT; y++)
+    {
+        for (Int32 x = 0; x < MAP_WIDTH; x++)
+        {
             Int32 tile = state.map.grid[y][x];
-            if (tile == 0) {
+            if (tile == 0)
+            {
                 // an empty tile
                 continue;
             }
@@ -135,25 +158,29 @@ static void DrawMap(State &state, RenderCommandBuffer &buffer) {
 
             Rectangle rectangle = Rectangle::FromVectors(screen, V2((Float)MAP_TILE_SIZE, (Float)MAP_TILE_SIZE));
 
-            switch (tile) {
-            case TILE_SOLID: {
+            switch (tile)
+            {
+            case TILE_SOLID:
+            {
                 color = WHITE;
-            } break;
-            case TILE_HOOK: {
+            }
+            break;
+            case TILE_HOOK:
+            {
                 color = Color(0, 150, 255);
 
                 rectangle.position.x += MAP_TILE_SIZE * 0.25f;
                 rectangle.position.y += MAP_TILE_SIZE * 0.25f;
                 rectangle.size.width *= 0.5f;
                 rectangle.size.height *= 0.5f;
-            } break;
+            }
+            break;
             }
 
             buffer.DrawRectangle(rectangle, color);
         }
     }
 }
-
 
 //
 // NOTE: player
@@ -179,23 +206,26 @@ static void DrawMap(State &state, RenderCommandBuffer &buffer) {
 #define PLAYER_DASH_COOLDOWN 1.0f
 #define PLAYER_JUMP_BUFFER_DURATION 0.15f
 
-namespace player {
+namespace player
+{
 
-static bool IsOnGround(State &state) {
+static bool IsOnGround(State &state)
+{
     Rectangle feet = Rectangle::GetCentered(state.player.position, V2(PLAYER_SIZE, PLAYER_SIZE));
     feet.position.y += 1.0f;
 
     return map::IsOverlappingSolidTile(state, feet);
 }
 
-
 // BEFORE
-static void UpdateSwing(State &state) {
+static void UpdateSwing(State &state)
+{
     Float distance = GetDistance(state.player.position, state.player.hook_target);
     Vector2 offset = state.player.position - state.player.hook_target;
 
     bool closer_than_rope = distance <= state.player.hook_rope_length || distance == 0.0f;
-    if (closer_than_rope) {
+    if (closer_than_rope)
+    {
         return;
     }
 
@@ -206,7 +236,8 @@ static void UpdateSwing(State &state) {
     map::MoveAndCollide(state, state.player.position, V2(PLAYER_SIZE, PLAYER_SIZE), correction);
 
     Float velocity = state.player.velocity.Dot(normal);
-    if (velocity > 0.0f) {
+    if (velocity > 0.0f)
+    {
         state.player.velocity.x -= normal.x * velocity;
         state.player.velocity.y -= normal.y * velocity;
     }
@@ -214,20 +245,26 @@ static void UpdateSwing(State &state) {
 
 }; // namespace player
 
-static void UpdatePlayer(State &state) {
-    if (state.player.jump_buffer_timer > 0.0f) {
+static void UpdatePlayer(State &state)
+{
+    if (state.player.jump_buffer_timer > 0.0f)
+    {
         state.player.jump_buffer_timer -= state.time.delta;
     }
-    if (state.input.jump.pressed) {
+    if (state.input.jump.pressed)
+    {
         state.player.jump_buffer_timer = PLAYER_JUMP_BUFFER_DURATION;
     }
 
     state.player.hook_cooldown -= state.time.delta;
 
     // NOTE: Behavior.
-    switch (state.player.state) {
-    case PLAYER_STATE_NORMAL: {
-        if (state.player.dash_timer > 0.0f) {
+    switch (state.player.state)
+    {
+    case PLAYER_STATE_NORMAL:
+    {
+        if (state.player.dash_timer > 0.0f)
+        {
             state.player.dash_timer -= state.time.delta;
         }
 
@@ -240,44 +277,54 @@ static void UpdatePlayer(State &state) {
         bool moving_fast = Abs(state.player.velocity.x) > PLAYER_MAX_SPEED;
         bool holding_same_direction = CopySign(1.0f, state.player.velocity.x) == horizontal_input;
 
-        if (!player::IsOnGround(state) && horizontal_input == 0.0f) {
-            acceleration_rate = 0.0f; 
-        } 
-        else if (!player::IsOnGround(state) && moving_fast && holding_same_direction) {
-            target_speed = state.player.velocity.x; 
+        if (!player::IsOnGround(state) && horizontal_input == 0.0f)
+        {
+            acceleration_rate = 0.0f;
+        }
+        else if (!player::IsOnGround(state) && moving_fast && holding_same_direction)
+        {
+            target_speed = state.player.velocity.x;
         }
 
-        if (is_near_jump_apex) {
+        if (is_near_jump_apex)
+        {
             acceleration_rate *= PLAYER_APEX_CONTROL_MULTIPLIER;
         }
 
         state.player.velocity.x = Approach(state.player.velocity.x, target_speed, acceleration_rate * state.time.delta);
 
         // NOTE: Jumping.
-        if (state.player.jump_buffer_timer > 0.0f && player::IsOnGround(state)) {
+        if (state.player.jump_buffer_timer > 0.0f && player::IsOnGround(state))
+        {
             state.player.velocity.y = -PLAYER_JUMP_SPEED;
             state.player.jump_buffer_timer = 0.0f;
         }
 
-        if (!state.input.jump.is_down) {
+        if (!state.input.jump.is_down)
+        {
             Float short_jump_threshold = -PLAYER_JUMP_SPEED * 0.5f;
             state.player.velocity.y = Max(state.player.velocity.y, short_jump_threshold);
         }
 
         // NOTE: Dashing.
-        if (state.input.dash.is_down && state.player.dash_timer <= 0.0f) {
+        if (state.input.dash.is_down && state.player.dash_timer <= 0.0f)
+        {
             state.player.state = PLAYER_STATE_DASH;
             state.player.dash_timer = PLAYER_DASH_DURATION;
 
-            if (horizontal_input != 0.0f) {
+            if (horizontal_input != 0.0f)
+            {
                 state.player.dash_direction = horizontal_input;
-            } else {
+            }
+            else
+            {
                 state.player.dash_direction = CopySign(1.0f, state.player.velocity.x);
             }
         }
 
         // NOTE: Slamming.
-        if (state.input.slam.is_down && !player::IsOnGround(state)) {
+        if (state.input.slam.is_down && !player::IsOnGround(state))
+        {
             state.player.state = PLAYER_STATE_SLAM;
             state.player.velocity.x = 0.0f;
             state.player.velocity.y = PLAYER_SLAM_SPEED;
@@ -285,7 +332,8 @@ static void UpdatePlayer(State &state) {
 
         // NOTE: Hook.
         Vector2 nearest_hook = Vector2::Zero();
-        if (state.input.hook.is_down && state.player.hook_cooldown <= 0.0f && map::FindNearestHookWithinRadius(state, state.player.position, PLAYER_HOOK_RADIUS, &nearest_hook)) {
+        if (state.input.hook.is_down && state.player.hook_cooldown <= 0.0f && map::FindNearestHookWithinRadius(state, state.player.position, PLAYER_HOOK_RADIUS, &nearest_hook))
+        {
             state.player.state = PLAYER_STATE_HOOK;
             state.player.hook_target = nearest_hook;
 
@@ -294,37 +342,47 @@ static void UpdatePlayer(State &state) {
 
         // NOTE: Gravity.
         state.player.velocity.y += PLAYER_GRAVITY * state.time.delta;
-    } break;
-    case PLAYER_STATE_DASH: {
+    }
+    break;
+    case PLAYER_STATE_DASH:
+    {
         state.player.velocity.x = state.player.dash_direction * PLAYER_DASH_SPEED;
         state.player.velocity.y = 0.0f;
 
         state.player.dash_timer -= state.time.delta;
 
         bool has_dash_ended = state.player.dash_timer <= 0.0f;
-        if (has_dash_ended) {
+        if (has_dash_ended)
+        {
             state.player.state = PLAYER_STATE_NORMAL;
             state.player.velocity.x = state.player.dash_direction * PLAYER_MAX_SPEED;
 
             state.player.dash_timer = PLAYER_DASH_COOLDOWN;
         }
-    } break;
-    case PLAYER_STATE_SLAM: {
+    }
+    break;
+    case PLAYER_STATE_SLAM:
+    {
         state.player.velocity.y = PLAYER_SLAM_SPEED;
 
-        if (player::IsOnGround(state)) {
+        if (player::IsOnGround(state))
+        {
             state.player.state = PLAYER_STATE_NORMAL;
         }
-    } break;
+    }
+    break;
 
-    case PLAYER_STATE_HOOK: {
-        if (!state.input.hook.is_down) {
+    case PLAYER_STATE_HOOK:
+    {
+        if (!state.input.hook.is_down)
+        {
             state.player.state = PLAYER_STATE_NORMAL;
             state.player.hook_cooldown = 0.25f;
             break;
         }
 
-        if (state.input.jump.pressed) {
+        if (state.input.jump.pressed)
+        {
             state.player.state = PLAYER_STATE_NORMAL;
             state.player.hook_cooldown = 0.25f;
             state.player.velocity.y = Min(state.player.velocity.y, -PLAYER_JUMP_SPEED);
@@ -336,7 +394,8 @@ static void UpdatePlayer(State &state) {
         Float distance = GetDistance(state.player.position, state.player.hook_target);
         Vector2 offset = state.player.position - state.player.hook_target;
 
-        if (distance > 0.0f) {
+        if (distance > 0.0f)
+        {
             Vector2 normal = Normalize(offset, distance);
             Vector2 tangent = V2(normal.y, -normal.x);
 
@@ -347,8 +406,8 @@ static void UpdatePlayer(State &state) {
         }
 
         state.player.velocity.y += PLAYER_GRAVITY * state.time.delta;
-
-    } break;
+    }
+    break;
     }
     // NOTE: physics and collision
 
@@ -357,22 +416,26 @@ static void UpdatePlayer(State &state) {
 
     map::MoveAndCollide(state, state.player.position, V2(PLAYER_SIZE, PLAYER_SIZE), move);
 
-    if (state.player.position.y == position_before_moving_y && move.y != 0.0f) {
+    if (state.player.position.y == position_before_moving_y && move.y != 0.0f)
+    {
         state.player.velocity.y = 0.0f;
     }
 
-    if (state.player.state == PLAYER_STATE_HOOK) {
+    if (state.player.state == PLAYER_STATE_HOOK)
+    {
         player::UpdateSwing(state);
     }
 }
 
 //
 
-static void DrawPlayer(State &state, RenderCommandBuffer &buffer) {
+static void DrawPlayer(State &state, RenderCommandBuffer &buffer)
+{
     Rectangle box = Rectangle::GetCentered(state.player.position, V2(PLAYER_SIZE, PLAYER_SIZE));
     buffer.DrawRectangle(Rectangle::FromVectors(state.camera.WorldToScreen(box.position), box.size), RED);
 
-    if (state.player.state == PLAYER_STATE_HOOK) {
+    if (state.player.state == PLAYER_STATE_HOOK)
+    {
         buffer.DrawLine(state.camera.WorldToScreen(state.player.position), state.camera.WorldToScreen(state.player.hook_target), WHITE);
     }
 }
@@ -384,16 +447,19 @@ static void DrawPlayer(State &state, RenderCommandBuffer &buffer) {
 #define ENEMY_SPEED 120.0f
 #define ENEMY_SIZE 30.0f
 
-enum EnemyType {
+enum EnemyType
+{
     ENEMY_TYPE_CHASER,
 };
 
-struct Enemy {
+struct Enemy
+{
     Vector2 position;
     EnemyType type;
 };
 
-namespace enemy {
+namespace enemy
+{
 
 static Enemy enemies[] = {
     {.position = V2(200.0f, 200.0f), .type = ENEMY_TYPE_CHASER},
@@ -401,11 +467,13 @@ static Enemy enemies[] = {
 };
 static Int32 enemy_count = SDL_arraysize(enemies);
 
-static void UpdateChaser(State &state, Enemy *enemy) {
+static void UpdateChaser(State &state, Enemy *enemy)
+{
     Float distance = GetDistance(state.player.position, enemy->position);
 
     Vector2 offset = state.player.position - enemy->position;
-    if (distance == 0.0f) {
+    if (distance == 0.0f)
+    {
         return;
     }
 
@@ -417,30 +485,40 @@ static void UpdateChaser(State &state, Enemy *enemy) {
 
 } // namespace enemy
 
-static void UpdateEnemy(State &state, Enemy *enemies, Int32 count) {
-    for (Int32 i = 0; i < count; i++) {
+static void UpdateEnemy(State &state, Enemy *enemies, Int32 count)
+{
+    for (Int32 i = 0; i < count; i++)
+    {
         Enemy *enemy = &enemies[i];
 
-        switch (enemy->type) {
-        case ENEMY_TYPE_CHASER: {
+        switch (enemy->type)
+        {
+        case ENEMY_TYPE_CHASER:
+        {
             enemy::UpdateChaser(state, enemy);
-        } break;
-        default: {
-        } break;
+        }
+        break;
+        default:
+        {
+        }
+        break;
         }
     }
 }
 
 //
 
-static void DrawEnemy(State &state, RenderCommandBuffer &buffer, Enemy *enemies, Int32 count) {
-    for (Int32 i = 0; i < count; i++) {
+static void DrawEnemy(State &state, RenderCommandBuffer &buffer, Enemy *enemies, Int32 count)
+{
+    for (Int32 i = 0; i < count; i++)
+    {
         Rectangle box = Rectangle::GetCentered(enemies[i].position, V2(ENEMY_SIZE, ENEMY_SIZE));
         buffer.DrawRectangle(Rectangle::FromVectors(state.camera.WorldToScreen(box.position), box.size), MAGENTA);
     }
 }
 
-State State::Initialize() {
+State State::Initialize()
+{
     State state = {};
 
     state.map = (Map){
@@ -461,7 +539,8 @@ State State::Initialize() {
     return state;
 }
 
-void State::Draw(RenderCommandBuffer &buffer) {
+void State::Draw(RenderCommandBuffer &buffer)
+{
     buffer.ClearScreen(BLACK);
 
     DrawMap(*this, buffer);
@@ -469,7 +548,8 @@ void State::Draw(RenderCommandBuffer &buffer) {
     DrawEnemy(*this, buffer, enemy::enemies, enemy::enemy_count);
 }
 
-void State::Update() {
+void State::Update()
+{
     UpdatePlayer(*this);
     UpdateEnemy(*this, enemy::enemies, enemy::enemy_count);
 

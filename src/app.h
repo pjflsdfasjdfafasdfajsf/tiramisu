@@ -9,7 +9,8 @@
 
 #include "SDK.h"
 
-struct App {
+struct App
+{
     SDL_Window *window;
     SDL_Renderer *renderer;
     RenderCommandBuffer buffer;

@@ -51,13 +51,13 @@ typedef size_t Usize;
 
 //
 // NOTE: Macros.
-// 
+//
 
 #if defined(__cplusplus)
 #define CPP 1
 #endif
 
-#if defined (_MSC_VER)
+#if defined(_MSC_VER)
 
 #define MSVC
 
@@ -73,16 +73,28 @@ typedef size_t Usize;
 
 #if defined(MSVC)
 
-#define Assert(Expression) if(!(Expression)) { __debugbreak(); }
+#define Assert(Expression) \
+    if (!(Expression))     \
+    {                      \
+        __debugbreak();    \
+    }
 
 #elif defined(GCC) || defined(CLANG)
 
-#define Assert(Expression) if(!(Expression)) { __builtin_trap(); }
+#define Assert(Expression) \
+    if (!(Expression))     \
+    {                      \
+        __builtin_trap();  \
+    }
 
 #else
-#define Assert(Expression) if(!(Expression)) { *(volatile int *)0 = 0; }
+#define Assert(Expression)      \
+    if (!(Expression))          \
+    {                           \
+        *(volatile int *)0 = 0; \
+    }
 
-#endif 
+#endif
 
 #define CUSTOM_INPUT_MAX_ACTIONS 256
 
@@ -107,13 +119,17 @@ typedef size_t Usize;
 /// alignment' MUST be a power of two
 #define AlignUp(value, alignment) (((value) + ((alignment) - 1)) & ~((alignment) - 1))
 
-typedef struct Vector2 {
-    union {
-        struct {
+typedef struct Vector2
+{
+    union
+    {
+        struct
+        {
             Float x, y;
         };
 
-        struct {
+        struct
+        {
             Float width, height;
         };
     };
@@ -133,7 +149,8 @@ typedef struct Vector2 {
     inline Float Dot(Vector2 b) const;
 
     // NOTE: No equivalent in C.
-    inline Vector2 &operator+=(Vector2 b) {
+    inline Vector2 &operator+=(Vector2 b)
+    {
         x += b.x;
         y += b.y;
         return *this;
@@ -143,69 +160,86 @@ typedef struct Vector2 {
 
 } Vector2;
 
-static inline Vector2 V2(Float x, Float y) {
+static inline Vector2 V2(Float x, Float y)
+{
     return (Vector2){{{x, y}}};
 }
 
-static inline Vector2 V2_Zero() {
+static inline Vector2 V2_Zero()
+{
     return V2(0, 0);
 }
 
-static inline Vector2 V2_Sub(Vector2 a, Vector2 b) {
+static inline Vector2 V2_Sub(Vector2 a, Vector2 b)
+{
     return V2(a.x - b.x, a.y - b.y);
 }
 
-static inline Vector2 V2_Add(Vector2 a, Vector2 b) {
+static inline Vector2 V2_Add(Vector2 a, Vector2 b)
+{
     return V2(a.x + b.x, a.y + b.y);
 }
 
-static inline Vector2 V2_Div(Vector2 vector, Float scalar) {
+static inline Vector2 V2_Div(Vector2 vector, Float scalar)
+{
     return V2(vector.x / scalar, vector.y / scalar);
 }
 
-static inline Vector2 V2_Mul(Vector2 vector, Float scalar) {
+static inline Vector2 V2_Mul(Vector2 vector, Float scalar)
+{
     return V2(vector.x * scalar, vector.y * scalar);
 }
 
-static inline Float V2_Dot(Vector2 a, Vector2 b) {
+static inline Float V2_Dot(Vector2 a, Vector2 b)
+{
     return (a.x * b.x) + (a.y * b.y);
 }
 
 #if defined(CPP)
 
-inline Vector2 Vector2::Zero() {
+inline Vector2 Vector2::Zero()
+{
     return V2_Zero();
 }
 
-inline Vector2 Vector2::operator+(Vector2 b) const {
+inline Vector2 Vector2::operator+(Vector2 b) const
+{
     return V2_Add(*this, b);
 }
 
-inline Vector2 Vector2::operator-(Vector2 b) const {
+inline Vector2 Vector2::operator-(Vector2 b) const
+{
     return V2_Sub(*this, b);
 }
 
-inline Vector2 Vector2::operator*(Float scalar) const {
+inline Vector2 Vector2::operator*(Float scalar) const
+{
     return V2_Mul(*this, scalar);
 }
 
-inline Vector2 Vector2::operator/(Float scalar) const {
+inline Vector2 Vector2::operator/(Float scalar) const
+{
     return V2_Div(*this, scalar);
 }
 
-inline Float Vector2::Dot(Vector2 b) const {
+inline Float Vector2::Dot(Vector2 b) const
+{
     return V2_Dot(*this, b);
 }
 
 #endif // CPP
 
-typedef struct Vector2i {
-    union {
-        struct {
+typedef struct Vector2i
+{
+    union
+    {
+        struct
+        {
             Int32 x, y;
         };
 
-        struct {
+        struct
+        {
             Int32 width, height;
         };
     };
@@ -217,57 +251,68 @@ typedef struct Vector2i {
 #endif // CPP
 } Vector2i;
 
-static inline Vector2i V2i(Int32 x, Int32 y) {
+static inline Vector2i V2i(Int32 x, Int32 y)
+{
     return (Vector2i){{{x, y}}};
 }
 
-static inline Vector2i V2i_Zero() {
+static inline Vector2i V2i_Zero()
+{
     return V2i(0, 0);
 }
 
 #if defined(CPP)
 
-inline Vector2i Vector2i::Zero() {
+inline Vector2i Vector2i::Zero()
+{
     return V2i_Zero();
 }
 
 #endif // CPP
 
-
-typedef struct RGBA {
+typedef struct RGBA
+{
     Uint8 red, green, blue, alpha;
 } RGBA;
 
 /// RGBA with Alpha set to 255.
-static inline RGBA Color3(Uint8 red, Uint8 green, Uint8 blue) {
+static inline RGBA Color3(Uint8 red, Uint8 green, Uint8 blue)
+{
     return (RGBA){red, green, blue, 255};
 }
 
-static inline RGBA Color4(Uint8 red, Uint8 green, Uint8 blue, Uint8 alpha) {
+static inline RGBA Color4(Uint8 red, Uint8 green, Uint8 blue, Uint8 alpha)
+{
     return (RGBA){red, green, blue, alpha};
 }
 
 #if defined(CPP)
 
-static inline RGBA Color(Uint8 red, Uint8 green, Uint8 blue, Uint8 alpha = 255) {
+static inline RGBA Color(Uint8 red, Uint8 green, Uint8 blue, Uint8 alpha = 255)
+{
     return (RGBA){red, green, blue, alpha};
 }
 
 #endif // CPP
 
-typedef struct Vector4 {
-    union {
-        struct {
+typedef struct Vector4
+{
+    union
+    {
+        struct
+        {
             Float x, y, z, w;
         };
 
-        struct {
+        struct
+        {
             Float red, green, blue, alpha;
         };
     };
 } Vector4;
 
-static inline Vector4 V4(Float x, Float y, Float z, Float w) {
+static inline Vector4 V4(Float x, Float y, Float z, Float w)
+{
     return (Vector4){{{x, y, z, w}}};
 }
 
@@ -280,7 +325,8 @@ static inline Vector4 V4(Float x, Float y, Float z, Float w) {
 
 // NOTE: Rectangle.
 
-typedef struct Rectangle {
+typedef struct Rectangle
+{
     Vector2 position;
     Vector2 size;
 
@@ -295,29 +341,35 @@ typedef struct Rectangle {
 #endif // CPP
 } Rectangle;
 
-static inline Rectangle Rectangle_FromFloats(Float x, Float y, Float width, Float height) {
+static inline Rectangle Rectangle_FromFloats(Float x, Float y, Float width, Float height)
+{
     return (Rectangle){V2(x, y), V2(width, height)};
 }
 
-static inline Rectangle Rectangle_FromVectors(Vector2 position, Vector2 size) {
+static inline Rectangle Rectangle_FromVectors(Vector2 position, Vector2 size)
+{
     return Rectangle_FromFloats(position.x, position.y, size.width, size.height);
 }
 
-static inline Rectangle Rectangle_GetCentered(Vector2 position, Vector2 size) {
+static inline Rectangle Rectangle_GetCentered(Vector2 position, Vector2 size)
+{
     return Rectangle_FromVectors(V2(position.x - (size.width * 0.5f), position.y - (size.height * 0.5f)), size);
 }
 
 #if defined(CPP)
 
-inline Rectangle Rectangle::FromFloats(Float x, Float y, Float width, Float height) {
+inline Rectangle Rectangle::FromFloats(Float x, Float y, Float width, Float height)
+{
     return Rectangle_FromFloats(x, y, width, height);
 }
 
-inline Rectangle Rectangle::FromVectors(Vector2 position, Vector2 size) {
+inline Rectangle Rectangle::FromVectors(Vector2 position, Vector2 size)
+{
     return Rectangle_FromVectors(position, size);
 }
 
-inline Rectangle Rectangle::GetCentered(Vector2 position, Vector2 size) {
+inline Rectangle Rectangle::GetCentered(Vector2 position, Vector2 size)
+{
     return Rectangle_GetCentered(position, size);
 }
 
@@ -326,45 +378,56 @@ inline Rectangle Rectangle::GetCentered(Vector2 position, Vector2 size) {
 // NOTE: Generic math.
 
 /// Moves CURRENT towards TARGET at a maximum rate of MAXIMUM_DELTA.
-static inline Float Approach(Float current, Float target, Float maximum_delta) {
-    if (current < target) {
+static inline Float Approach(Float current, Float target, Float maximum_delta)
+{
+    if (current < target)
+    {
         return Min(current + maximum_delta, target);
-    } else {
+    }
+    else
+    {
         return Max(current - maximum_delta, target);
     }
 }
 
-static inline Float GetDistanceSquared(Vector2 a, Vector2 b) {
+static inline Float GetDistanceSquared(Vector2 a, Vector2 b)
+{
     Vector2 offset = V2_Sub(a, b);
     return V2_Dot(offset, offset);
 }
 
-static inline Float GetDistance(Vector2 a, Vector2 b) {
+static inline Float GetDistance(Vector2 a, Vector2 b)
+{
     return SquareRoot(GetDistanceSquared(a, b));
 }
 
-static inline Vector2 Normalize(Vector2 vector, Float distance) {
-    if (distance == 0.0f) {
+static inline Vector2 Normalize(Vector2 vector, Float distance)
+{
+    if (distance == 0.0f)
+    {
         return V2(0.0f, 0.0f);
     }
     return V2_Div(vector, distance);
 }
 
-typedef struct Camera {
+typedef struct Camera
+{
     /// Top-left of the view in world space.
     Vector2 position;
     Vector2i viewport;
 
 #if defined(CPP)
 
-    inline Vector2 WorldToScreen(Vector2 world) {
+    inline Vector2 WorldToScreen(Vector2 world)
+    {
         return world - this->position;
     }
 
 #endif // CPP
 } Camera;
 
-static inline Vector2 Camera_WorldToScreen(Camera camera, Vector2 world) {
+static inline Vector2 Camera_WorldToScreen(Camera camera, Vector2 world)
+{
     return V2_Sub(world, camera.position);
 }
 
@@ -372,33 +435,48 @@ static inline Vector2 Camera_WorldToScreen(Camera camera, Vector2 world) {
 // NOTE: Rendering.
 //
 
-typedef enum RenderCommandType {
+typedef enum RenderCommandType
+{
     RenderCommandType_None,
     RenderCommandType_ClearScreen,
     RenderCommandType_DrawRectangle,
     RenderCommandType_DrawLine,
+    RenderCommandType_DrawDebugText0,
 } RenderCommandType;
 
-typedef struct RenderCommand_ClearScreen {
+typedef struct RenderCommand_ClearScreen
+{
     RenderCommandType type;
     RGBA color;
 } RenderCommand_ClearScreen;
 
-typedef struct RenderCommand_DrawRectangle {
+typedef struct RenderCommand_DrawRectangle
+{
     RenderCommandType type;
     Rectangle rectangle;
     RGBA color;
 } RenderCommand_DrawRectangle;
 
-typedef struct RenderCommand_DrawLine {
+typedef struct RenderCommand_DrawLine
+{
     RenderCommandType type;
     Vector2 start;
     Vector2 end;
     RGBA color;
 } RenderCommand_DrawLine;
 
-typedef struct RenderCommandBuffer {
-    union {
+typedef struct RenderCommand_DrawDebugText0
+{
+    RenderCommandType type;
+    Vector2 position;
+    const char *text;
+    RGBA color;
+} RenderCommand_DrawDebugText0;
+
+typedef struct RenderCommandBuffer
+{
+    union
+    {
         unsigned char *memory;
         // NOTE: Makes this structure same for x32 and x64.
         Uint64 padding;
@@ -418,8 +496,9 @@ typedef struct RenderCommandBuffer {
 } RenderCommandBuffer;
 
 /// Pushes raw bytes to command buffer. Prefer using helpers instead.
-static inline void *RenderCommandBuffer_Push(RenderCommandBuffer *buffer, Uint32 memory_bytes_needed) {
-    Uint32 alignment = 4; 
+static inline void *RenderCommandBuffer_Push(RenderCommandBuffer *buffer, Uint32 memory_bytes_needed)
+{
+    Uint32 alignment = 4;
     Assert(IsPowerOfTwo(alignment));
 
     Uint32 aligned_bytes_needed = AlignUp(memory_bytes_needed, alignment);
@@ -427,41 +506,48 @@ static inline void *RenderCommandBuffer_Push(RenderCommandBuffer *buffer, Uint32
     bool has_enough_space = (buffer->size + aligned_bytes_needed) <= buffer->capacity;
     Assert(has_enough_space);
 
-    if (has_enough_space) {
+    if (has_enough_space)
+    {
         Uint32 current_aligned_offset = AlignUp(buffer->size, alignment);
         void *address = buffer->memory + current_aligned_offset;
-        
+
         buffer->size = current_aligned_offset + aligned_bytes_needed;
-        
+
         return address;
     }
 
     return 0;
 }
 
-static inline void RenderCommandBuffer_ClearScreen(RenderCommandBuffer *buffer, RGBA color) {
+static inline void RenderCommandBuffer_ClearScreen(RenderCommandBuffer *buffer, RGBA color)
+{
     RenderCommand_ClearScreen *command = (RenderCommand_ClearScreen *)RenderCommandBuffer_Push(buffer, sizeof(RenderCommand_ClearScreen));
 
-    if (command) {
+    if (command)
+    {
         command->type = RenderCommandType_ClearScreen;
         command->color = color;
     }
 }
 
-static inline void RenderCommandBuffer_DrawRectangle(RenderCommandBuffer *buffer, Rectangle rectangle, RGBA color) {
+static inline void RenderCommandBuffer_DrawRectangle(RenderCommandBuffer *buffer, Rectangle rectangle, RGBA color)
+{
     RenderCommand_DrawRectangle *command = (RenderCommand_DrawRectangle *)RenderCommandBuffer_Push(buffer, sizeof(RenderCommand_DrawRectangle));
 
-    if (command) {
+    if (command)
+    {
         command->type = RenderCommandType_DrawRectangle;
         command->rectangle = rectangle;
         command->color = color;
     }
 }
 
-static inline void RenderCommandBuffer_DrawLine(RenderCommandBuffer *buffer, Vector2 start, Vector2 end, RGBA color) {
+static inline void RenderCommandBuffer_DrawLine(RenderCommandBuffer *buffer, Vector2 start, Vector2 end, RGBA color)
+{
     RenderCommand_DrawLine *command = (RenderCommand_DrawLine *)RenderCommandBuffer_Push(buffer, sizeof(RenderCommand_DrawLine));
 
-    if (command) {
+    if (command)
+    {
         command->type = RenderCommandType_DrawLine;
         command->start = start;
         command->end = end;
@@ -469,17 +555,33 @@ static inline void RenderCommandBuffer_DrawLine(RenderCommandBuffer *buffer, Vec
     }
 }
 
+static inline void RenderCommandBuffer_DrawDebugText0(RenderCommandBuffer *buffer, Vector2 position, const char *text, RGBA color)
+{
+    RenderCommand_DrawDebugText0 *command = (RenderCommand_DrawDebugText0 *)RenderCommandBuffer_Push(buffer, sizeof(RenderCommand_DrawDebugText0));
+
+    if (command)
+    {
+        command->type = RenderCommandType_DrawDebugText0;
+        command->position = position;
+        command->text = text;
+        command->color = color;
+    }
+}
+
 #if defined(CPP)
 
-inline void RenderCommandBuffer::ClearScreen(RGBA color) {
+inline void RenderCommandBuffer::ClearScreen(RGBA color)
+{
     RenderCommandBuffer_ClearScreen(this, color);
 }
 
-inline void RenderCommandBuffer::DrawRectangle(Rectangle rectangle, RGBA color) {
+inline void RenderCommandBuffer::DrawRectangle(Rectangle rectangle, RGBA color)
+{
     RenderCommandBuffer_DrawRectangle(this, rectangle, color);
 }
 
-inline void RenderCommandBuffer::DrawLine(Vector2 start, Vector2 end, RGBA color) {
+inline void RenderCommandBuffer::DrawLine(Vector2 start, Vector2 end, RGBA color)
+{
     RenderCommandBuffer_DrawLine(this, start, end, color);
 }
 
@@ -489,14 +591,16 @@ inline void RenderCommandBuffer::DrawLine(Vector2 start, Vector2 end, RGBA color
 // NOTE: Game
 //
 
-typedef enum PlayerState {
+typedef enum PlayerState
+{
     PLAYER_STATE_NORMAL,
     PLAYER_STATE_DASH,
     PLAYER_STATE_SLAM,
     PLAYER_STATE_HOOK,
 } PlayerState;
 
-typedef struct Player {
+typedef struct Player
+{
     Vector2 position;
     Vector2 velocity;
     PlayerState state;
@@ -511,21 +615,25 @@ typedef struct Player {
     Float jump_buffer_timer;
 } Player;
 
-typedef struct Time {
+typedef struct Time
+{
     Float delta;
 } Time;
 
-typedef struct Map {
+typedef struct Map
+{
     int grid[MAP_HEIGHT][MAP_WIDTH];
 } Map;
 
-typedef struct Action {
+typedef struct Action
+{
     bool is_down;
     bool pressed;
     bool released;
 } Action;
 
-typedef struct Input {
+typedef struct Input
+{
     Action jump;
     Action dash;
     Action slam;
@@ -536,7 +644,8 @@ typedef struct Input {
     Action custom[CUSTOM_INPUT_MAX_ACTIONS];
 } Input;
 
-typedef struct State {
+typedef struct State
+{
     Player player;
     Camera camera;
     Time time;
@@ -579,7 +688,8 @@ void State_Update(State *state);
 #define Update                                                           \
     void _Guest_Update_INNER(State *state, RenderCommandBuffer *buffer); \
     EXPORT("guest_update")                                               \
-    void _Guest_Update(void) {                                           \
+    void _Guest_Update(void)                                             \
+    {                                                                    \
         _Guest_Update_INNER(&_state, &_buffer);                          \
     }                                                                    \
     void _Guest_Update_INNER(State *state, RenderCommandBuffer *buffer)
@@ -592,12 +702,14 @@ static unsigned char _buffer_backing_memory[Kilobytes(128)];
 static RenderCommandBuffer _buffer = {_buffer_backing_memory, 0, sizeof(_buffer_backing_memory)};
 
 EXPORT("guest_get_state")
-State *_Guest_GetState() {
+State *_Guest_GetState()
+{
     return &_state;
 }
 
 EXPORT("guest_get_buffer")
-RenderCommandBuffer *_Guest_GetBuffer() {
+RenderCommandBuffer *_Guest_GetBuffer()
+{
     return &_buffer;
 }
 
