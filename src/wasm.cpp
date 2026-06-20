@@ -1,6 +1,8 @@
 #include "wasm.h"
 #include "SDK.h"
 #include "SDL3/SDL_stdinc.h"
+#include "m3_core.h"
+#include "m3_env.h"
 #include "wasm3.h"
 #include <SDL3/SDL.h>
 
@@ -13,7 +15,7 @@ namespace wasm
 
 static m3ApiRawFunction(HostLog)
 {
-    const char *message = (const char *)(uintptr_t)*(_sp++);
+    m3ApiGetArgMem(const char *, message);
 
     Module *module = (Module *)_ctx->userdata;
     const char *name = module->metadata.ok ? module->metadata.name : "unknown";
@@ -28,9 +30,9 @@ static m3ApiRawFunction(HostLog)
 
 static m3ApiRawFunction(HostSetMetadata)
 {
-    const char *name = (const char *)(uintptr_t)*(_sp++);
-    const char *version = (const char *)(uintptr_t)*(_sp++);
-    const char *summary = (const char *)(uintptr_t)*(_sp++);
+    m3ApiGetArgMem(const char *, name);
+    m3ApiGetArgMem(const char *, version);
+    m3ApiGetArgMem(const char *, summary);
 
     Module *module = (Module *)_ctx->userdata;
 
@@ -48,8 +50,7 @@ static m3ApiRawFunction(HostSetMetadata)
 static m3ApiRawFunction(HostRegisterAction)
 {
     m3ApiReturnType(Int32);
-
-    const char *name = (const char *)(uintptr_t)*(_sp++);
+    m3ApiGetArgMem(const char *, name);
 
     Context *context = (Context *)_ctx->userdata;
     Assert(context);
@@ -82,8 +83,8 @@ static m3ApiRawFunction(HostRegisterAction)
 
 static m3ApiRawFunction(HostRegisterDefaultKey)
 {
-    const char *action = (const char *)(uintptr_t)*(_sp++);
-    const char *key = (const char *)(uintptr_t)*(_sp++);
+    m3ApiGetArgMem(const char *, action);
+    m3ApiGetArgMem(const char *, key);
 
     Context *context = (Context *)_ctx->userdata;
     Assert(context);
@@ -252,8 +253,7 @@ void Context::Update(State &state, RenderCommandBuffer &buffer)
         }
 
         Uint32 memory_size = 0;
-        // Uint8 *wasm_memory = m3_GetMemory(module->runtime, &memory_size, 0);
-        Uint8 *wasm_memory = m3_GetMemory(module->module, &memory_size, 0);
+        Uint8 *wasm_memory = (Uint8 *)m3_GetMemory(module->module, &memory_size, 0);
 
         if (!wasm_memory || memory_size == 0)
         {

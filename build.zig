@@ -12,7 +12,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const sdl = b.dependency("sdl", .{ .target = target, .optimize = optimize });
+    const sdl = b.dependency("sdl", .{ .target = target, .optimize = .ReleaseFast });
     const stb = b.dependency("stb", .{});
     const wasm3 = b.dependency("wasm3", .{});
 
