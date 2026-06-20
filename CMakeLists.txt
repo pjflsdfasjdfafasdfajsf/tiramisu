@@ -22,33 +22,45 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(SDL3 wasm3)
 
-file(GLOB SOURCES "src/*.cpp")
+set(SOURCES src/main.cpp
+            src/app.cpp
+            src/inputmap.cpp
+            src/wasm.cpp
+        )
 
 add_executable(tiramisu ${SOURCES})
 
-target_include_directories(tiramisu PRIVATE
-    include
-    ${wasm3_SOURCE_DIR}/source
-)
+set(SOURCES src/atlaspacker.cpp)
 
-target_compile_options(tiramisu PRIVATE
-    -Wall -Wextra
-    -Wno-attributes
-    -Wno-unused-parameter
-    -fno-exceptions
-    -fno-rtti
-    
-    $<$<CONFIG:Release>:-fno-unwind-tables>
-    $<$<CONFIG:Release>:-fno-asynchronous-unwind-tables>
-    
-    $<$<CONFIG:Debug>:-ggdb3>
-    $<$<CONFIG:Debug>:-Og>
-)
+add_executable(atlaspacker ${SOURCES})
 
-target_link_options(tiramisu PRIVATE
-    -fno-exceptions
+foreach(target atlaspacker tiramisu)
+    target_include_directories(${target} PRIVATE
+        include
+        libs
+        ${wasm3_SOURCE_DIR}/source
+    )
+
+    target_compile_options(${target} PRIVATE
+        -Wall -Wextra
+        -Wno-attributes
+        -Wno-unused-parameter
+        -fno-exceptions
+        -fno-rtti
     
-    $<$<CONFIG:Release>:-s>
-)
+        $<$<CONFIG:Release>:-fno-unwind-tables>
+        $<$<CONFIG:Release>:-fno-asynchronous-unwind-tables>
+    
+        $<$<CONFIG:Debug>:-ggdb3>
+        $<$<CONFIG:Debug>:-Og>
+    )
+
+    target_link_options(${target} PRIVATE
+        -fno-exceptions
+    
+        $<$<CONFIG:Release>:-s>
+    )
+endforeach()
 
 target_link_libraries(tiramisu PRIVATE SDL3::SDL3 m3)
+
