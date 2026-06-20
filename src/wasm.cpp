@@ -13,7 +13,7 @@ namespace wasm
 
 static m3ApiRawFunction(HostLog)
 {
-    m3ApiGetArgMem(const char *, message);
+    const char *message = (const char *)(uintptr_t)*(_sp++);
 
     Module *module = (Module *)_ctx->userdata;
     const char *name = module->metadata.ok ? module->metadata.name : "unknown";
@@ -28,9 +28,9 @@ static m3ApiRawFunction(HostLog)
 
 static m3ApiRawFunction(HostSetMetadata)
 {
-    m3ApiGetArgMem(const char *, name);
-    m3ApiGetArgMem(const char *, version);
-    m3ApiGetArgMem(const char *, summary);
+    const char *name = (const char *)(uintptr_t)*(_sp++);
+    const char *version = (const char *)(uintptr_t)*(_sp++);
+    const char *summary = (const char *)(uintptr_t)*(_sp++);
 
     Module *module = (Module *)_ctx->userdata;
 
@@ -48,7 +48,8 @@ static m3ApiRawFunction(HostSetMetadata)
 static m3ApiRawFunction(HostRegisterAction)
 {
     m3ApiReturnType(Int32);
-    m3ApiGetArgMem(const char *, name);
+
+    const char *name = (const char *)(uintptr_t)*(_sp++);
 
     Context *context = (Context *)_ctx->userdata;
     Assert(context);
@@ -81,8 +82,8 @@ static m3ApiRawFunction(HostRegisterAction)
 
 static m3ApiRawFunction(HostRegisterDefaultKey)
 {
-    m3ApiGetArgMem(const char *, action);
-    m3ApiGetArgMem(const char *, key);
+    const char *action = (const char *)(uintptr_t)*(_sp++);
+    const char *key = (const char *)(uintptr_t)*(_sp++);
 
     Context *context = (Context *)_ctx->userdata;
     Assert(context);
@@ -251,7 +252,8 @@ void Context::Update(State &state, RenderCommandBuffer &buffer)
         }
 
         Uint32 memory_size = 0;
-        Uint8 *wasm_memory = m3_GetMemory(module->runtime, &memory_size, 0);
+        // Uint8 *wasm_memory = m3_GetMemory(module->runtime, &memory_size, 0);
+        Uint8 *wasm_memory = m3_GetMemory(module->module, &memory_size, 0);
 
         if (!wasm_memory || memory_size == 0)
         {

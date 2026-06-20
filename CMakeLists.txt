@@ -37,7 +37,7 @@ add_executable(atlaspacker ${SOURCES})
 foreach(target atlaspacker tiramisu)
     target_include_directories(${target} PRIVATE
         include
-        libs
+        libs/stb
         ${wasm3_SOURCE_DIR}/source
     )
 
