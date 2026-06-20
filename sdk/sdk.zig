@@ -92,6 +92,7 @@ pub const State = extern struct {
     map: Map,
     input: Input,
 
+    /// Do not touch
     ok: bool,
 };
 
@@ -152,27 +153,50 @@ pub const RenderCommandBuffer = extern struct {
     }
 
     pub fn draw(self: *RenderCommandBuffer, command: Command) !void {
-        inline for (std.meta.fields(Command)) |field| {
-            const Inner: type = @FieldType(Command, field.name);
-            if (std.mem.eql(u8, @tagName(command), field.name)) {
-                const inner = try self.push(Inner);
-                inner.* = @field(command, field.name);
-            }
+        switch (command) {
+            inline else => |payload| {
+                const T = @TypeOf(payload);
+                const inner = try self.push(T);
+                inner.* = payload;
+            },
         }
-        // switch (command) {
-        //     inline else => |target| {
-        //         const Inner: type = @TypeOf(target);
-        //         const inner = try self.push(Inner);
-        //         inner.* = @field(command, @tagName(std.meta.activeTag(command)));
-        //     },
-        // }
     }
 };
 
 extern fn host_log(message: [*:0]const u8) void;
-pub const log = host_log;
-extern fn host_set_metadata(name: [*:0]const u8, version: [*:0]const u8, summary: [*:0]const u8) void;
-pub const setMetadata = host_set_metadata;
+
+pub fn log(
+    comptime level: std.log.Level,
+    comptime scope: @EnumLiteral(),
+    comptime format: []const u8,
+    args: anytype,
+) void {
+    var buffer: [128]u8 = undefined;
+    var writer: std.Io.Writer = .fixed(&buffer);
+    writer.writeAll(level.asText()) catch {};
+    if (scope != .default) writer.print("({t})", .{scope}) catch {};
+    writer.writeByte(' ') catch {};
+    writer.print(format, args) catch {};
+    writer.writeByte(0) catch {};
+    host_log(@ptrCast(writer.buffered()));
+}
+
+pub const Metadata = struct {
+    name: [:0]const u8,
+    summary: ?[:0]const u8 = null,
+    version: std.SemanticVersion = .{ .major = 1, .minor = 0, .patch = 0 },
+
+    extern fn host_set_metadata(name: [*:0]const u8, version: [*:0]const u8, summary: [*:0]const u8) void;
+
+    pub fn set(self: Metadata) std.Io.Writer.Error!void {
+        var buffer: [32]u8 = undefined;
+        var writer: std.Io.Writer = .fixed(&buffer);
+        try self.version.format(&writer);
+        try writer.writeByte(0);
+
+        host_set_metadata(self.name, @ptrCast(writer.buffered()), self.summary orelse "");
+    }
+};
 
 /// The returned index represents the index it was assigned to in Input.custom array.
 /// It is recommended to prefix `name` with the name of the mod to avoid any conflicts. For example:
@@ -183,17 +207,36 @@ pub const registerAction = host_register_action;
 extern fn host_register_default_key(action: [*:0]const u8, key: [*:0]const u8) void;
 pub const registerDefaultKey = host_register_default_key;
 
-pub var state: State = undefined;
-pub var buffer_backing_memory: [128 * 1024]u8 = @splat(0);
-pub var buffer: RenderCommandBuffer = .{
-    .memory = .{ .ptr = &buffer_backing_memory },
-    .capacity = buffer_backing_memory.len,
+var state: State = undefined;
+var render_command_buffer_backing_memory: [128 * 1024]u8 = @splat(0);
+var render_command_buffer: RenderCommandBuffer = .{
+    .memory = .{ .ptr = &render_command_buffer_backing_memory },
+    .capacity = render_command_buffer_backing_memory.len,
 };
+
+const root = @import("root");
+
+comptime {
+    _ = root;
+}
 
 export fn guest_get_state() *State {
     return &state;
 }
 
 export fn guest_get_buffer() *RenderCommandBuffer {
-    return &buffer;
+    return &render_command_buffer;
+}
+
+export fn guest_initialize() void {
+    root.init() catch |err| handleError(err);
+}
+
+export fn guest_update() void {
+    root.update(&state, &render_command_buffer) catch |err| handleError(err);
+}
+
+fn handleError(err: anyerror) void {
+    state.ok = false;
+    log(.err, .default, "{t}", .{err});
 }
