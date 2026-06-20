@@ -110,7 +110,7 @@ static m3ApiRawFunction(HostRegisterDefaultKey)
 // NOTE: Implementation.
 //
 
-static bool LoadModule(Context *context, const char *file_path)
+static Bool LoadModule(Context *context, const char *file_path)
 {
     if (context->module_count >= (Int32)SDL_arraysize(context->modules))
     {
@@ -213,7 +213,7 @@ static SDL_EnumerationResult SDLCALL EnumerateDirectoryCallback(void *userdata, 
     return SDL_ENUM_CONTINUE;
 }
 
-bool Initialize(Context *context, const char *directory)
+Bool Initialize(Context *context, const char *directory)
 {
     Assert(context != nullptr);
 
@@ -261,7 +261,7 @@ void Context::Update(State &state, RenderCommandBuffer &buffer)
         // NOTE: 0 is a valid memory offset in Wasm so it's better to check if the function exists.
         if (module->get_state)
         {
-            bool is_state_in_bounds = (module->state + sizeof(State)) <= memory_size;
+            Bool is_state_in_bounds = (module->state + sizeof(State)) <= memory_size;
             if (is_state_in_bounds)
             {
                 SDL_memcpy(wasm_memory + module->state, &state, sizeof(State));
@@ -288,7 +288,7 @@ void Context::Update(State &state, RenderCommandBuffer &buffer)
             continue;
         }
 
-        bool is_buffer_struct_in_bounds = (module->buffer + sizeof(RenderCommandBuffer)) <= memory_size;
+        Bool is_buffer_struct_in_bounds = (module->buffer + sizeof(RenderCommandBuffer)) <= memory_size;
         if (!is_buffer_struct_in_bounds)
         {
             SDL_Log("module '%s' buffer pointer is out of bounds\n", module->metadata.name);
@@ -305,7 +305,7 @@ void Context::Update(State &state, RenderCommandBuffer &buffer)
         }
 
         Uint32 wasm_memory_offset = (Uint32)(Uintptr)local_buffer->memory;
-        bool is_buffer_memory_in_bounds = (wasm_memory_offset + local_buffer->size) <= memory_size;
+        Bool is_buffer_memory_in_bounds = (wasm_memory_offset + local_buffer->size) <= memory_size;
 
         if (!is_buffer_memory_in_bounds)
         {

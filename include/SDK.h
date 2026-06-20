@@ -27,13 +27,16 @@
 #ifndef __cplusplus
 #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
 #include <stdbool.h>
+typedef bool Bool;
 #else
 #ifndef bool
-typedef int bool;
+typedef int Bool;
 #define true 1
 #define false 0
 #endif
 #endif
+#else
+typedef bool Bool;
 #endif
 
 typedef uint8_t Uint8;
@@ -503,7 +506,7 @@ static inline void *RenderCommandBuffer_Push(RenderCommandBuffer *buffer, Uint32
 
     Uint32 aligned_bytes_needed = AlignUp(memory_bytes_needed, alignment);
 
-    bool has_enough_space = (buffer->size + aligned_bytes_needed) <= buffer->capacity;
+    Bool has_enough_space = (buffer->size + aligned_bytes_needed) <= buffer->capacity;
     Assert(has_enough_space);
 
     if (has_enough_space)
@@ -622,17 +625,16 @@ typedef struct Time
 
 typedef struct Map
 {
-    int grid[MAP_HEIGHT][MAP_WIDTH];
+    Int32 grid[MAP_HEIGHT][MAP_WIDTH];
 } Map;
 
 typedef struct Action
 {
-    bool is_down;
-    bool pressed;
-    bool released;
+    Bool is_down;
+    Bool pressed;
+    Bool released;
 } Action;
-
-typedef struct Input
+ typedef struct Input
 {
     Action jump;
     Action dash;
@@ -652,7 +654,7 @@ typedef struct State
     Map map;
     Input input;
 
-    bool ok;
+    Bool ok;
 
 #if defined(CPP) && defined(INTERNAL)
 
@@ -698,7 +700,7 @@ void State_Update(State *state);
 // permanent local storage here. The getters are called only once and then are cached.
 
 static State _state;
-static unsigned char _buffer_backing_memory[Kilobytes(128)];
+static Uint8 _buffer_backing_memory[Kilobytes(128)];
 static RenderCommandBuffer _buffer = {_buffer_backing_memory, 0, sizeof(_buffer_backing_memory)};
 
 EXPORT("guest_get_state")

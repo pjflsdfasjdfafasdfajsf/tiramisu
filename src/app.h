@@ -18,13 +18,13 @@ struct App
     wasm::Context *wasm;
     State state;
     /// Was this structure initialized succesfully.
-    bool ok;
+    Bool ok;
     /// Maps action -> scancode.
     Action *keys[SDL_SCANCODE_COUNT];
 
     static App Initialize();
 
-    bool PollEvents();
+    Bool PollEvents();
     void Update();
     void Draw();
     void ClearInputEdges();

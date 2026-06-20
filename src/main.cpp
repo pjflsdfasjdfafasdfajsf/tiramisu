@@ -74,7 +74,7 @@ const char *GetAbsolutePath(const char *file)
 
 void WriteDefaultInputConfig(void)
 {
-    bool exists = SDL_IOFromFile(GetAbsolutePath("input.txt"), "r");
+    Bool exists = SDL_IOFromFile(GetAbsolutePath("input.txt"), "r");
     if (exists)
     {
         SDL_Log("input.txt already exists\n");
@@ -179,7 +179,7 @@ static void ApplyBindings(App &app, inputmap::Binding *bindings, Uint32 count, c
     }
 }
 
-static bool IsActionBound(inputmap::Bindings *bindings, const char *action)
+static Bool IsActionBound(inputmap::Bindings *bindings, const char *action)
 {
     for (Uint32 i = 0; i < bindings->count; i++)
     {
@@ -191,7 +191,7 @@ static bool IsActionBound(inputmap::Bindings *bindings, const char *action)
     return false;
 }
 
-static bool AppendMissingBinding(SDL_IOStream **stream, inputmap::Bindings *user_bindings, const char *action, const char *key)
+static Bool AppendMissingBinding(SDL_IOStream **stream, inputmap::Bindings *user_bindings, const char *action, const char *key)
 {
     if (IsActionBound(user_bindings, action))
     {
@@ -420,7 +420,7 @@ void App::ClearInputEdges()
     }
 }
 
-bool App::PollEvents()
+Bool App::PollEvents()
 {
     this->ClearInputEdges();
 

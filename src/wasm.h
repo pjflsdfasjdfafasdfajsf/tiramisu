@@ -15,7 +15,7 @@ struct Metadata
     char version[16];
     char summary[256];
 
-    bool ok;
+    Bool ok;
 };
 
 struct Module
@@ -36,7 +36,7 @@ struct Module
     Metadata metadata;
 
     /// Here means whether a mod is active or not.
-    bool ok;
+    Bool ok;
 };
 
 struct Context
@@ -55,7 +55,7 @@ struct Context
 };
 
 /// DIRECTORY is where this function is looking for mods.
-bool Initialize(Context *context, const char *directory);
+Bool Initialize(Context *context, const char *directory);
 
 } // namespace wasm
 

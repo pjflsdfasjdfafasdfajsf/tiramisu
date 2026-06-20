@@ -24,9 +24,9 @@ namespace map
 {
 /// Returns TRUE if the tile at a given coordinates X, Y is set to 1.
 /// Tiles outside of the map are not considered solid.
-static bool TileIsSolid(State &state, Int32 x, Int32 y)
+static Bool TileIsSolid(State &state, Int32 x, Int32 y)
 {
-    bool is_outside_the_map = x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT;
+    Bool is_outside_the_map = x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT;
     if (is_outside_the_map)
     {
         return false;
@@ -36,7 +36,7 @@ static bool TileIsSolid(State &state, Int32 x, Int32 y)
 }
 
 /// Returns TRUE if the rectangle overlaps any solid tile.
-static bool IsOverlappingSolidTile(State &state, Rectangle rectangle)
+static Bool IsOverlappingSolidTile(State &state, Rectangle rectangle)
 {
     Vector2i first_touched_tile = V2i(
         (Int32)Floor(rectangle.position.x / MAP_TILE_SIZE),
@@ -107,23 +107,23 @@ static void MoveAndCollide(State &state, Vector2 &position, Vector2 size, Vector
     }
 }
 
-static bool FindNearestHookWithinRadius(State &state, Vector2 origin, Float radius, Vector2 *out_nearest_hook)
+static Bool FindNearestHookWithinRadius(State &state, Vector2 origin, Float radius, Vector2 *out_nearest_hook)
 {
-    bool result = false;
+    Bool result = false;
     Float closest_distance_squared = radius * radius;
 
     for (Int32 y = 0; y < MAP_HEIGHT; y++)
     {
         for (Int32 x = 0; x < MAP_WIDTH; x++)
         {
-            bool is_hook_tile = (state.map.grid[y][x] == TILE_HOOK);
+            Bool is_hook_tile = (state.map.grid[y][x] == TILE_HOOK);
 
             if (is_hook_tile)
             {
                 Vector2 center = V2((Float)(x * MAP_TILE_SIZE) + (MAP_TILE_SIZE * 0.5f), (Float)(y * MAP_TILE_SIZE) + (MAP_TILE_SIZE * 0.5f));
 
                 Float distance_squared = GetDistanceSquared(origin, center);
-                bool is_closer_than_previous = (distance_squared <= closest_distance_squared);
+                Bool is_closer_than_previous = (distance_squared <= closest_distance_squared);
 
                 if (is_closer_than_previous)
                 {
@@ -209,7 +209,7 @@ static void DrawMap(State &state, RenderCommandBuffer &buffer)
 namespace player
 {
 
-static bool IsOnGround(State &state)
+static Bool IsOnGround(State &state)
 {
     Rectangle feet = Rectangle::GetCentered(state.player.position, V2(PLAYER_SIZE, PLAYER_SIZE));
     feet.position.y += 1.0f;
@@ -223,7 +223,7 @@ static void UpdateSwing(State &state)
     Float distance = GetDistance(state.player.position, state.player.hook_target);
     Vector2 offset = state.player.position - state.player.hook_target;
 
-    bool closer_than_rope = distance <= state.player.hook_rope_length || distance == 0.0f;
+    Bool closer_than_rope = distance <= state.player.hook_rope_length || distance == 0.0f;
     if (closer_than_rope)
     {
         return;
@@ -269,13 +269,13 @@ static void UpdatePlayer(State &state)
         }
 
         Float horizontal_input = (Float)state.input.right.is_down - (Float)state.input.left.is_down;
-        bool is_near_jump_apex = Abs(state.player.velocity.y) < PLAYER_APEX_THRESHOLD && !player::IsOnGround(state);
+        Bool is_near_jump_apex = Abs(state.player.velocity.y) < PLAYER_APEX_THRESHOLD && !player::IsOnGround(state);
 
         Float target_speed = horizontal_input * PLAYER_MAX_SPEED;
         Float acceleration_rate = (horizontal_input != 0.0f) ? PLAYER_ACCELERATION : PLAYER_FRICTION;
 
-        bool moving_fast = Abs(state.player.velocity.x) > PLAYER_MAX_SPEED;
-        bool holding_same_direction = CopySign(1.0f, state.player.velocity.x) == horizontal_input;
+        Bool moving_fast = Abs(state.player.velocity.x) > PLAYER_MAX_SPEED;
+        Bool holding_same_direction = CopySign(1.0f, state.player.velocity.x) == horizontal_input;
 
         if (!player::IsOnGround(state) && horizontal_input == 0.0f)
         {
@@ -351,7 +351,7 @@ static void UpdatePlayer(State &state)
 
         state.player.dash_timer -= state.time.delta;
 
-        bool has_dash_ended = state.player.dash_timer <= 0.0f;
+        Bool has_dash_ended = state.player.dash_timer <= 0.0f;
         if (has_dash_ended)
         {
             state.player.state = PlayerState_Normal;
