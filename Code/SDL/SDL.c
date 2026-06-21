@@ -1,21 +1,6 @@
 #include "SDL.h"
 #include "SDK.h"
 
-#if defined(_WIN32)
-#define DynamicLibrarySuffix ".dll"
-#elif defined(__APPLE__)
-#define DynamicLibrarySuffix ".dylib"
-#elif defined(__linux__)
-#define DynamicLibrarySuffix ".so"
-#else
-#error "Unsupported platform for compilation"
-#endif
-#define DynamicLibraryName "Game"
-#define DynamicLibraryTempSuffix "_Temp"
-
-#define DynamicLibraryFullName DynamicLibraryName DynamicLibrarySuffix
-#define DynamicLibraryFullTempName DynamicLibraryName DynamicLibraryTempSuffix DynamicLibrarySuffix
-
 //
 // NOTE: Intenral
 //
