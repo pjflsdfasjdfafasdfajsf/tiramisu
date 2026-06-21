@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(tiramisu C CXX)
+project(App C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -11,44 +11,56 @@ include(FetchContent)
 FetchContent_Declare(
     SDL3
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG        ca67f19c8f161cfff26ee52c57ff2ae8b9d42ef6 # latest commit as of June 18 2026
+    GIT_TAG        ca67f19c8f161cfff26ee52c57ff2ae8b9d42ef6
 )
 
-FetchContent_Declare(
-    wasm3
-    GIT_REPOSITORY https://github.com/wasm3/wasm3.git
-    GIT_TAG        79d412ea5fcf92f0efe658d52827a0e0a96ff442
+FetchContent_MakeAvailable(SDL3)
+
+###############################################
+
+add_library(CommonOptions INTERFACE)
+
+target_include_directories(CommonOptions INTERFACE
+    Public
 )
 
-FetchContent_MakeAvailable(SDL3 wasm3)
-
-file(GLOB SOURCES "src/*.cpp")
-
-add_executable(tiramisu ${SOURCES})
-
-target_include_directories(tiramisu PRIVATE
-    include
-    ${wasm3_SOURCE_DIR}/source
-)
-
-target_compile_options(tiramisu PRIVATE
+target_compile_options(CommonOptions INTERFACE
     -Wall -Wextra
     -Wno-attributes
     -Wno-unused-parameter
-    -fno-exceptions
-    -fno-rtti
-    
-    $<$<CONFIG:Release>:-fno-unwind-tables>
-    $<$<CONFIG:Release>:-fno-asynchronous-unwind-tables>
     
     $<$<CONFIG:Debug>:-ggdb3>
     $<$<CONFIG:Debug>:-Og>
 )
 
-target_link_options(tiramisu PRIVATE
+###############################################
+# Library
+###############################################
+
+add_library(Game SHARED
+    Code/App.c
+)
+
+set_target_properties(Game PROPERTIES 
+    PREFIX ""
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
+target_link_libraries(Game PRIVATE CommonOptions)
+
+###############################################
+# Executable
+###############################################
+
+add_executable(App
+    Code/Main.c
+    Code/SDL.c
+)
+
+target_link_options(App PRIVATE
     -fno-exceptions
     
     $<$<CONFIG:Release>:-s>
 )
 
-target_link_libraries(tiramisu PRIVATE SDL3::SDL3 m3)
+target_link_libraries(App PRIVATE SDL3::SDL3 CommonOptions)
