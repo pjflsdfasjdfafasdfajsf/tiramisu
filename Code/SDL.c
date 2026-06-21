@@ -12,10 +12,7 @@
 #else
 #error "Unsupported platform for compilation"
 #endif
-#define DynamicLibraryPrefix "./"
 #define DynamicLibraryName "Game"
-
-#define DynamicLibraryFullName DynamicLibraryPrefix DynamicLibraryName DynamicLibrarySuffix
 
 #define CheckReturnBool(Function)                                            \
     if (!(Function))                                                         \
@@ -32,8 +29,32 @@
     }
 
 //
-// NOTE: Code
+// NOTE: Intenral
 //
+
+// NOTE: This is needed so it does not matter where you launch the game from and
+// it still finds the lib.
+static inline Bool GetLibAbsPath(char *Buf, Usize Size)
+{
+    Assert(Buf);
+    Assert(Size > 0);
+
+    const char *BasePath = SDL_GetBasePath();
+    if (!BasePath)
+    {
+        return False;
+    }
+
+    int PathLen = SDL_snprintf(Buf, Size, "%s%s%s", BasePath, DynamicLibraryName, DynamicLibrarySuffix);
+    if (PathLen < 0 || (Usize)PathLen >= Size)
+    {
+        return False;
+    }
+
+    return True;
+}
+
+// NOTE: Code
 
 static inline Code CodeLoad(const char *Path)
 {
@@ -109,8 +130,11 @@ SDL Init()
         Assert(0);
     }
 
-    SDL_Log("Dynamic library name is: %s\n", DynamicLibraryFullName);
-    Result.Code = CodeLoad(DynamicLibraryFullName);
+    char Path[1024];
+    CheckReturnBool(GetLibAbsPath(Path, sizeof(Path)));
+
+    SDL_Log("Dynamic library path is: %s\n", Path);
+    Result.Code = CodeLoad(Path);
 
     return Result;
 }
