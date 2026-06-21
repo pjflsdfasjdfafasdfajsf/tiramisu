@@ -43,10 +43,10 @@ add_custom_target(Copy
 ###
 
 add_executable(Watcher
-    ../Watcher.c
+    Watcher.c
 )
 
-target_include_directories(Watcher PRIVATE ../../Public)
+target_include_directories(Watcher PRIVATE ../Public)
 
 add_custom_target(Watch
     COMMAND $<TARGET_FILE:Watcher>
@@ -69,7 +69,7 @@ add_executable(App
 
 target_include_directories(App PRIVATE
     ${wamr_SOURCE_DIR}/core/iwasm/include
-    ../../Public
+    ../Public
 )
 
 target_compile_options(App PRIVATE

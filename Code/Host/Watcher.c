@@ -1,5 +1,5 @@
 //
-// NOTE: This is more of a build-time utility though not exactly. Cross-platform file watching (used in in Watch target)
+// NOTE: File watching.
 //
 
 #if !defined(__linux__)

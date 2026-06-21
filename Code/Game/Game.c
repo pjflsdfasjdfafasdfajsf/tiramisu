@@ -1,7 +1,7 @@
 //
 // NOTE: Main game file.
 //
-#include "SDK.h"
+#include <SDK.h>
 
 UpdateAndRender(UpdateAndRender)
 {
@@ -11,5 +11,5 @@ UpdateAndRender(UpdateAndRender)
         State->IsInitialized = True;
     }
 
-    RenderBufClear(RenderBuf, Color3(255, 255, 255));
+    RenderBufClear(RenderBuf, Color3(0, 0, 0));
 }

@@ -1,0 +1,25 @@
+cmake_minimum_required(VERSION 3.16)
+project(Root C)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin")
+
+include(ExternalProject)
+
+set(GAME_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Code/Game")
+set(GAME_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/Game-build")
+
+ExternalProject_Add(Game
+    SOURCE_DIR "${GAME_SOURCE_DIR}"
+    BINARY_DIR "${GAME_BINARY_DIR}"
+    CMAKE_ARGS 
+        "-DCMAKE_TOOLCHAIN_FILE=${GAME_SOURCE_DIR}/Toolchain.cmake"
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+    INSTALL_COMMAND ""
+    BUILD_ALWAYS ON   
+)
+
+add_subdirectory(Code/Host)
+
+add_dependencies(App Game)
