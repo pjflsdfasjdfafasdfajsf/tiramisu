@@ -1,3 +1,6 @@
+//
+// NOTE: WASM Runtime implementation.
+// 
 #include "Runtime.h"
 #include "SDK.h"
 #include "SDL.h"
@@ -5,7 +8,7 @@
 #include "wasm_export.h"
 
 //
-// NOTE: Runtime-provided funcs.
+// NOTE: Host-provided funcs.
 //
 
 static Void HostPrintLine(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uint32 Len)
