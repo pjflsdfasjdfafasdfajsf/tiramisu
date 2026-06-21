@@ -33,35 +33,6 @@
 //     return 0;
 // }
 
-// // NOTE: Usually I don't free anything but it makes sense to do it here as this is called on every hot reload.
-// static inline Bool CopyFile(const char *From, const char *To)
-// {
-//     SDL_RemovePath(To);
-
-//     Usize Size = 0;
-//     Void *Data = SDL_LoadFile(From, &Size);
-//     if (!Data)
-//     {
-//         // NOTE: Probably compiler being funny.
-//         return False;
-//     }
-
-//     SDL_IOStream *Out = SDL_IOFromFile(To, "wb");
-//     if (!Out)
-//     {
-//         SDL_free(Data);
-
-//         return False;
-//     }
-
-//     Usize Written = SDL_WriteIO(Out, Data, Size);
-//     SDL_CloseIO(Out);
-
-//     SDL_free(Data);
-
-//     return Written == Size;
-// }
-
 // NOTE: This is needed so it does not matter where you launch the game from and
 // it still finds the lib.
 static inline Bool GetAbsPath(char *Buf, Usize Size, const char *Name)
@@ -101,56 +72,51 @@ static inline Bool GetAbsPath(char *Buf, Usize Size, const char *Name)
 // {
 //     Code Result = {0};
 
-//     if (!CopyFile(Path, TempPath))
-//     {
-//         LogCritical("%s", SDL_GetError());
-//         Assert(0);
-//     }
+    if (!SDL_CopyFile(Path, TempPath))
+    {
+        LogCritical("%s", SDL_GetError());
+        return Result;
+    }
 
-//     Result.Handle = SDL_LoadObject(TempPath);
-//     if (!Result.Handle)
-//     {
-//         LogCritical("%s", SDL_GetError());
-//         Assert(0);
-//     }
+    Result.Handle = SDL_LoadObject(TempPath);
+    if (!Result.Handle)
+    {
+        LogCritical("%s", SDL_GetError());
+        return Result;
+    }
 
-//     Result.AppUpdateAndRender = (UpdateAndRenderFunction *)SDL_LoadFunction(Result.Handle, "UpdateAndRender");
-//     if (!Result.AppUpdateAndRender)
-//     {
-//         LogCritical("%s", SDL_GetError());
-//         Assert(0);
-//     }
+    Result.AppUpdateAndRender = (UpdateAndRenderFunction *)SDL_LoadFunction(Result.Handle, "UpdateAndRender");
+    if (!Result.AppUpdateAndRender)
+    {
+        LogCritical("%s", SDL_GetError());
+        return Result;
+    }
 
-//     Result.LastWriteTime = GetFileModTime(Path);
+    Result.LastWriteTime = GetFileModTime(Path);
+    Result.IsValid = True;
 
 //     return Result;
 // }
 
-// static inline Void CodeReload(Code *Code, const char *Path, const char *TempPath)
-// {
-//     Int64 CurrentTime = GetFileModTime(Path);
+static inline Void CodeReload(Code *OldCode, const char *Path, const char *TempPath)
+{
+    Int64 CurrentTime = GetFileModTime(Path);
 
-//     if (CurrentTime > Code->LastWriteTime && CurrentTime)
-//     {
-//         CodeUnload(Code);
-//         // NOTE: Just in case.
-//         SDL_Delay(50);
+    if (CurrentTime > OldCode->LastWriteTime && CurrentTime)
+    {
+        CodeUnload(OldCode);
+        // NOTE: Just in case.
+        SDL_Delay(50);
 
-//         if (CopyFile(Path, TempPath))
-//         {
-//             Code->Handle = SDL_LoadObject(TempPath);
-//             if (Code->Handle)
-//             {
-//                 Code->AppUpdateAndRender = (UpdateAndRenderFunction *)SDL_LoadFunction(Code->Handle, "UpdateAndRender");
-//                 Code->LastWriteTime = CurrentTime;
-//             }
-//             else
-//             {
-//                 LogCritical("%s", SDL_GetError());
-//             }
-//         }
-//     }
-// }
+        Code NewCode = CodeLoad(Path, TempPath);
+        if (!NewCode.IsValid)
+        {
+            return;
+        }
+
+        *OldCode = NewCode;
+    }
+}
 
 //
 // NOTE: SDL

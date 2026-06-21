@@ -39,5 +39,5 @@ UpdateAndRender(UpdateAndRender)
     // how it works you can look at Render.h SDK header.
     // Everything else that isn't there (where 'everything else' is just
     // command execution) is hidden in our engine.
-    RenderBufClear(RenderBuf, Color3(255, 255, 0));
+    RenderBufClear(RenderBuf, Color3(55, 222, 225));
 }
