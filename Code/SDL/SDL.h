@@ -6,12 +6,12 @@
 #include "Host.h"
 #include "SDK.h"
 
-typedef struct
-{
-    SDL_SharedObject *Handle;
-    UpdateAndRenderFunction *AppUpdateAndRender;
-    Int64 LastWriteTime;
-} Code;
+// typedef struct
+// {
+//     SDL_SharedObject *Handle;
+//     UpdateAndRenderFunction *AppUpdateAndRender;
+//     Int64 LastWriteTime;
+// } Code;
 
 typedef struct
 {
@@ -21,8 +21,10 @@ typedef struct
     Host Host;
     MemAlloc MemAlloc;
     RenderBuf RenderBuf;
-    // NOTE: The loaded application DLL.
-    Code Code;
+
+    // // NOTE: The loaded application DLL.
+    // Code Code;
+
     // NOTE: Memory.
     State State;
     Void *ExtraMem;

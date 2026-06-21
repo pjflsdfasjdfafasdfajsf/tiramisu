@@ -7,11 +7,13 @@
 
 #if defined(WASM)
 #define Export(Name) __attribute__((export_name(Name)))
-#define Import(Name) __attribute__((import_module("env"), import_name("Print")))
+#define Import(Name) __attribute__((import_module("env"), import_name(Name)))
 #else
 #define Export(Name)
 #define Import(Name)
 #endif
+
+// NOTE: This provides all the functions you need.
 
 typedef struct State
 {
@@ -19,17 +21,11 @@ typedef struct State
 } State;
 
 // NOTE: `State` is the game state and `ExtraMem` is memory for allocating your own state struct if you need it.
-typedef Void UpdateAndRenderFunction(State *State, Void *ExtraMem, RenderBuf *RenderBuf);
+typedef Void UpdateAndRenderFunction(State *State, RenderBuf *RenderBuf, Void *ExtraMem);
 #define UpdateAndRender(Name) Export("UpdateAndRender") Void Name(State *State, Void *ExtraMem, RenderBuf *RenderBuf)
 
-//
-// NOTE: Function imports.
-//
-
-#if defined(WASM)
-
-Import("Print") Void Print(const char *Ptr, Uint32 Len);
-static inline Void PrintStr(const char *Str)
+Import("PrintLine") Void PrintLine(const char *Ptr, Uint32 Len);
+static inline Void Print(const char *Str)
 {
     Assert(Str);
 
@@ -38,9 +34,7 @@ static inline Void PrintStr(const char *Str)
         return;
     }
 
-    Print(Str, StrLen(Str));
+    PrintLine(Str, StrLen(Str));
 }
-
-#endif
 
 #endif
