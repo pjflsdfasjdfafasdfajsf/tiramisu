@@ -25,9 +25,11 @@ typedef struct
     void *Bytes;
 
     Bool IsValid;
+    Int64 LastWriteTime;
 } Host;
 
 Host HostInit(Void);
+Void HostDeinit(Host *Host);
 
 Bool HostLoadOne(Host *Host, const char *File);
 

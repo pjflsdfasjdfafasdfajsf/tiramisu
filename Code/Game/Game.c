@@ -11,5 +11,5 @@ UpdateAndRender(UpdateAndRender)
         State->IsInitialized = True;
     }
 
-    RenderBufClear(RenderBuf, Color3(255, 0, 0));
+    RenderBufClear(RenderBuf, Color3(255, 255, 255));
 }

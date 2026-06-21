@@ -1,20 +1,22 @@
 #include "SDL.h"
-#include "SDK.h"
+#include "Host.h"
 
 //
 // NOTE: Intenral
 //
 
-// static inline Int64 GetFileModTime(const char *Path)
-// {
-//     SDL_PathInfo Info;
-//     if (SDL_GetPathInfo(Path, &Info))
-//     {
-//         return Info.modify_time;
-//     }
+#define GAME_WASM_FILE "Game.wasm"
 
-//     return 0;
-// }
+static inline Int64 GetFileModTime(const char *Path)
+{
+    SDL_PathInfo Info;
+    if (SDL_GetPathInfo(Path, &Info))
+    {
+        return Info.modify_time;
+    }
+
+    return 0;
+}
 
 // NOTE: This is needed so it does not matter where you launch the game from and
 // it still finds the lib.
@@ -38,68 +40,6 @@ static inline Bool GetAbsPath(char *Buf, Usize Size, const char *Name)
 
     return True;
 }
-
-// // NOTE: Code
-
-// static inline Void CodeUnload(Code *Code)
-// {
-//     if (Code->Handle)
-//     {
-//         SDL_UnloadObject(Code->Handle);
-//         Code->Handle = 0;
-//         Code->AppUpdateAndRender = 0;
-//     }
-// }
-
-// static inline Code CodeLoad(const char *Path, const char *TempPath)
-// {
-//     Code Result = {0};
-
-//     if (!SDL_CopyFile(Path, TempPath))
-//     {
-//         LogCritical("%s", SDL_GetError());
-//         return Result;
-//     }
-
-//     Result.Handle = SDL_LoadObject(TempPath);
-//     if (!Result.Handle)
-//     {
-//         LogCritical("%s", SDL_GetError());
-//         return Result;
-//     }
-
-//     Result.AppUpdateAndRender = (UpdateAndRenderFunction *)SDL_LoadFunction(Result.Handle, "UpdateAndRender");
-//     if (!Result.AppUpdateAndRender)
-//     {
-//         LogCritical("%s", SDL_GetError());
-//         return Result;
-//     }
-
-//     Result.LastWriteTime = GetFileModTime(Path);
-//     Result.IsValid = True;
-
-//     return Result;
-// }
-
-// static inline Void CodeReload(Code *OldCode, const char *Path, const char *TempPath)
-// {
-//     Int64 CurrentTime = GetFileModTime(Path);
-
-//     if (CurrentTime > OldCode->LastWriteTime && CurrentTime)
-//     {
-//         CodeUnload(OldCode);
-//         // NOTE: Just in case.
-//         SDL_Delay(50);
-
-//         Code NewCode = CodeLoad(Path, TempPath);
-//         if (!NewCode.IsValid)
-//         {
-//             return;
-//         }
-
-//         *OldCode = NewCode;
-//     }
-// }
 
 //
 // NOTE: SDL
@@ -148,25 +88,48 @@ Void Update(SDL *SDL)
 {
     Assert(SDL);
 
-    // {
-    //     char Path[1024];
-    //     char TempPath[1024];
-
-    //     if (GetAbsPath(Path, sizeof(Path), DynamicLibraryFullName) &&
-    //         GetAbsPath(TempPath, sizeof(TempPath), DynamicLibraryFullTempName))
-    //     {
-    //         CodeReload(&SDL->Code, Path, TempPath);
-    //     }
-    // }
-
-    // if (SDL->Code.AppUpdateAndRender)
-    // {
-    //     SDL->Code.AppUpdateAndRender(&SDL->State, &SDL->RenderBuf, SDL->ExtraMem);
-    // }
-
-    if (!HostUpdate(&SDL->Host, &SDL->State, &SDL->RenderBuf))
+    char Path[1024];
+    if (GetAbsPath(Path, sizeof(Path), GAME_WASM_FILE))
     {
-        Assert(0);
+        Int64 CurrentTime = GetFileModTime(Path);
+        if (CurrentTime > SDL->Host.LastWriteTime && CurrentTime)
+        {
+            SDL_Delay(50);
+            SDL_Log("Reload\n");
+
+            // NOTE: Need to save ExtraMem since that's where state is stored
+            if (SDL->Host.ModuleInst && SDL->Host.ExtraMem)
+            {
+                Void *NativeExtraMem = wasm_runtime_addr_app_to_native(SDL->Host.ModuleInst, SDL->Host.ExtraMem);
+                if (NativeExtraMem)
+                {
+                    SDL_memcpy(SDL->ExtraMem, NativeExtraMem, Kb(16));
+                }
+            }
+            HostDeinit(&SDL->Host);
+            if (HostLoadOne(&SDL->Host, Path))
+            {
+                SDL->Host.LastWriteTime = CurrentTime;
+
+                // NOTE: And restore the saved ExtraMem
+                if (SDL->Host.ModuleInst && SDL->Host.ExtraMem)
+                {
+                    Void *NativeExtraMem = wasm_runtime_addr_app_to_native(SDL->Host.ModuleInst, SDL->Host.ExtraMem);
+                    if (NativeExtraMem)
+                    {
+                        SDL_memcpy(NativeExtraMem, SDL->ExtraMem, Kb(16));
+                    }
+                }
+            }
+        }
+    }
+    // NOTE: This handles the case where you got an error on compilation
+    if (SDL->Host.IsValid)
+    {
+        if (!HostUpdate(&SDL->Host, &SDL->State, &SDL->RenderBuf))
+        {
+            Assert(0);
+        }
     }
 }
 
@@ -219,7 +182,7 @@ SDL Init()
     {
         char Path[1024];
 
-        if (!GetAbsPath(Path, sizeof(Path), "Game.wasm"))
+        if (!GetAbsPath(Path, sizeof(Path), GAME_WASM_FILE))
         {
             LogCritical("%s", SDL_GetError());
             Assert(0);
@@ -229,6 +192,8 @@ SDL Init()
         {
             Assert(0);
         }
+
+        Result.Host.LastWriteTime = GetFileModTime(Path);
     }
 
     return Result;

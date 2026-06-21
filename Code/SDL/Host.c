@@ -1,5 +1,6 @@
-#include "SDL.h"
+#include "Host.h"
 #include "SDK.h"
+#include "SDL.h"
 
 #include "wasm_export.h"
 
@@ -45,6 +46,34 @@ Host HostInit(Void)
 
     Result.IsValid = True;
     return Result;
+}
+
+Void HostDeinit(Host *Host)
+{
+    Assert(Host);
+
+    if (Host->ExecEnv)
+    {
+        wasm_runtime_destroy_exec_env(Host->ExecEnv);
+        Host->ExecEnv = 0;
+    }
+    if (Host->ModuleInst)
+    {
+        wasm_runtime_deinstantiate(Host->ModuleInst);
+        Host->ModuleInst = 0;
+    }
+    if (Host->Module)
+    {
+        wasm_runtime_unload(Host->Module);
+        Host->Module = 0;
+    }
+    if (Host->Bytes)
+    {
+        SDL_free(Host->Bytes);
+        Host->Bytes = 0;
+    }
+
+    Host->IsValid = False;
 }
 
 Bool HostLoadOne(Host *Host, const char *Path)
@@ -99,13 +128,13 @@ Bool HostLoadOne(Host *Host, const char *Path)
     Host->Name = wasm_runtime_lookup_function(Host->ModuleInst, #Name); \
     if (!Host->Name)                                                    \
     {                                                                   \
-        LogCritical("wasm_runtime_lookup_function  ('%s')\n"    \
+        LogCritical("wasm_runtime_lookup_function  ('%s')\n"            \
                     "NOTE: Host expects '%s' to be exported.\n",        \
                     #Name, #Signature);                                 \
         return False;                                                   \
     }
 
-    Function(UpdateAndRender, Void UpdateAndRender(*State, *RenderBuf));
+    Function(UpdateAndRender, Void UpdateAndRender(*State, *ExtraMem, *RenderBuf));
 
     Function(GetState, State * GetState(Void));
     Function(GetRenderBuf, RenderBuf * GetRenderBuf(Void));
@@ -128,6 +157,7 @@ Bool HostLoadOne(Host *Host, const char *Path)
 
 #undef Pointer
 
+    Host->IsValid = True;
     return True;
 }
 

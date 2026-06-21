@@ -3,6 +3,10 @@ project(Game C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+###############################################
+# Game.wasm
+###############################################
+
 add_executable(Game Game.c ../../Public/Init.c)
 
 set_target_properties(Game PROPERTIES SUFFIX ".wasm")

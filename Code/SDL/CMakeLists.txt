@@ -28,25 +28,34 @@ set(WAMR_BUILD_SIMD 0 CACHE BOOL "Disable SIMD" FORCE)
 FetchContent_MakeAvailable(SDL3 WAMR)
 
 ###############################################
+# Watch
+###############################################
 
-# ###############################################
-# # Watch
-# ###############################################
+set(GAME_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../Game")
 
-# add_executable(WatchExe
-#     Code/Watch.c
-# )
+add_custom_target(Copy
+    COMMAND ${CMAKE_COMMAND} --build "${GAME_DIR}/build" --target Game
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${GAME_DIR}/build/Game.wasm"
+            "${CMAKE_CURRENT_BINARY_DIR}/Game.wasm"
+)
 
-# target_link_libraries(WatchExe PRIVATE CommonOptions)
+###
 
-# add_custom_target(Watch
-#     COMMAND $<TARGET_FILE:WatchExe> 
-#             "${CMAKE_CURRENT_SOURCE_DIR}/Code" 
-#             "${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target Game"
-#     DEPENDS WatchExe
-#     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-#     USES_TERMINAL 
-# )
+add_executable(Watcher
+    ../Watcher.c
+)
+
+target_include_directories(Watcher PRIVATE ../../Public)
+
+add_custom_target(Watch
+    COMMAND $<TARGET_FILE:Watcher>
+            "${GAME_DIR}"
+            "${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target Copy"
+    DEPENDS Watcher
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    USES_TERMINAL 
+)
 
 ###############################################
 # Executable
