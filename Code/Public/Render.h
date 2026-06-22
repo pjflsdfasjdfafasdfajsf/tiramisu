@@ -7,10 +7,17 @@
 #define BUF_ALIGN 4
 StaticAssert(IsPow2(BUF_ALIGN));
 
+// NOTE:
+// 1. All positions are in pixels, where (0,0) is the top-left corner of the
+// screen
+// 2. Intenally renderer uses letterboxing with the resolution of 1280x720
+// TODO: Probably will have more to say later
+
 typedef enum
 {
     RenderCommand_None,
     RenderCommand_Clear,
+    RenderCommand_DrawDebugText,
 } RenderCommand;
 
 // NOTE: Every command must start with this header for iterators sake.
@@ -20,11 +27,27 @@ typedef struct
     Uint32 Size;
 } RenderHeader;
 
+// NOTE: Clears the entire screen with the specified `Color`.
 typedef struct
 {
-    RenderHeader Head;
-    Color Col;
+    RenderHeader Header;
+    Color Color;
 } RenderClear;
+
+// NOTE: There's a reason why this command is called 'draw DEBUG' text and
+// that reason is that the implementation of it just uses SDL built-in
+// SDL_RenderDebugText function, which provides just simple bitmap
+// font rendering intended for, as you probably already guessed,
+// debugging.
+typedef struct
+{
+    // TODO: IMPLEMENT TEXT!!!
+    RenderHeader Header;
+    Vector2 Pos;
+    Color Color;
+    // NOTE: Scale multiplier.
+    Vector2 Scale;
+} RenderDrawDebugText;
 
 typedef struct
 {
@@ -56,16 +79,34 @@ static inline Void *RenderBufPush(RenderBuf *RenderBuf, Uint32 Bytes)
     return 0;
 }
 
-static inline Void RenderBufClear(RenderBuf *RenderBuf, Color Col)
-{
-    RenderClear *cmd = (RenderClear *)RenderBufPush(RenderBuf, sizeof(RenderClear));
+// NOTE: Must store aligned size here as that is what Push actually reserved.
+#define HeaderSize(Type) AlignUp(sizeof(Type), BUF_ALIGN)
 
-    if (cmd)
+static inline Void RenderBufClear(RenderBuf *RenderBuf, Color Color)
+{
+    RenderClear *Cmd = (RenderClear *)RenderBufPush(RenderBuf, sizeof(RenderClear));
+
+    if (Cmd)
     {
-        cmd->Head.Type = RenderCommand_Clear;
-        // NOTE: Must store aligned size here as that is what Push actually reserved.
-        cmd->Head.Size = AlignUp(sizeof(RenderClear), BUF_ALIGN);
-        cmd->Col = Col;
+        Cmd->Header.Type = RenderCommand_Clear;
+        Cmd->Header.Size = HeaderSize(RenderClear);
+
+        Cmd->Color = Color;
+    }
+}
+
+static inline Void RenderBufDrawDebugText(RenderBuf *RenderBuf, Color Color, Vector2 Pos, Vector2 Scale)
+{
+    RenderDrawDebugText *Cmd = (RenderDrawDebugText *)RenderBufPush(RenderBuf, sizeof(RenderDrawDebugText));
+
+    if (Cmd)
+    {
+        Cmd->Header.Type = RenderCommand_DrawDebugText;
+        Cmd->Header.Size = HeaderSize(RenderDrawDebugText);
+
+        Cmd->Pos = Pos;
+        Cmd->Color = Color;
+        Cmd->Scale = Scale;
     }
 }
 

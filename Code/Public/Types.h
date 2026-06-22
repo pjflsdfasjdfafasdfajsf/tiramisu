@@ -83,12 +83,12 @@ typedef size_t Usize;
 //  `Align` must be a power of 2.
 #define AlignUp(Val, Align) (((Val) + ((Align) - 1)) & ~((Align) - 1))
 
-static inline Uint32 StrLen(const char *Str)
+static inline Uint32 CStrLen(const char *CStr)
 {
-    Assert(Str);
+    Assert(CStr);
 
     Uint32 Len = 0;
-    while (Str[Len])
+    while (CStr[Len])
     {
         Len++;
     }
@@ -111,6 +111,22 @@ typedef struct
 static inline Color Color3(Uint8 R, Uint8 G, Uint8 B)
 {
     return (Color){R, G, B, 255};
+}
+
+// NOTE: Color definitions.
+
+#define White Color3(255, 255, 255)
+#define Black Color3(0, 0, 0)
+
+typedef struct
+{
+    Float32 X;
+    Float32 Y;
+} Vector2;
+
+static inline Vector2 V2(Float32 X, Float32 Y)
+{
+    return (Vector2){X, Y};
 }
 
 #endif

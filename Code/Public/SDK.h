@@ -25,7 +25,7 @@ typedef Void UpdateAndRenderFunction(State *State, RenderBuf *RenderBuf, Void *E
 #define UpdateAndRender(Name) Export("UpdateAndRender") Void Name(State *State, Void *ExtraMem, RenderBuf *RenderBuf)
 
 Import("PrintLine") Void PrintLine(const char *Ptr, Uint32 Len);
-static inline Void Print(const char *Str)
+static inline Void PrintCStr(const char *Str)
 {
     Assert(Str);
 
@@ -34,7 +34,7 @@ static inline Void Print(const char *Str)
         return;
     }
 
-    PrintLine(Str, StrLen(Str));
+    PrintLine(Str, CStrLen(Str));
 }
 
 #endif

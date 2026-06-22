@@ -1,5 +1,8 @@
 #include "SDL.h"
+#include "Render.h"
 #include "Runtime.h"
+#include "SDL3/SDL_error.h"
+#include "SDL3/SDL_render.h"
 #include "Types.h"
 
 //
@@ -96,12 +99,34 @@ Void Render(SDL *App)
         {
             RenderClear *Clear = (RenderClear *)Cmd;
 
-            if (!SDL_SetRenderDrawColor(App->Renderer, Clear->Col.R, Clear->Col.G, Clear->Col.B, Clear->Col.A))
+            if (!SDL_SetRenderDrawColor(App->Renderer, Clear->Color.R, Clear->Color.G, Clear->Color.B, Clear->Color.A))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
             }
             if (!SDL_RenderClear(App->Renderer))
+            {
+                LogCritical("%s", SDL_GetError());
+                Assert(0);
+            }
+        }
+        break;
+
+        case RenderCommand_DrawDebugText:
+        {
+            RenderDrawDebugText *DrawDebugText = (RenderDrawDebugText *)Cmd;
+
+            if (!SDL_SetRenderDrawColor(App->Renderer, DrawDebugText->Color.R, DrawDebugText->Color.G, DrawDebugText->Color.B, DrawDebugText->Color.A))
+            {
+                LogCritical("%s", SDL_GetError());
+                Assert(0);
+            }
+            if (!SDL_SetRenderScale(App->Renderer, DrawDebugText->Scale.X, DrawDebugText->Scale.Y))
+            {
+                LogCritical("%s", SDL_GetError());
+                Assert(0);
+            }
+            if (!SDL_RenderDebugText(App->Renderer, DrawDebugText->Pos.X, DrawDebugText->Pos.Y, "Hardcoded for now hi"))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);

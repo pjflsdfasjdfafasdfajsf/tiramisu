@@ -30,14 +30,13 @@ UpdateAndRender(UpdateAndRender)
         // The Print function does not prefix your logs with anything, and
         // that's the exact reason why you should prepend some prefix to your logs.
         // You can go even further and prepend the logging level:
-        // Print("(Example Mod): INFO: Initialized")
+        // PrintCStr("(Example Mod): INFO: Initialized")
         // You don't need to include the newline, it's already appended for you.
-        Print("(Example Mod): Initialized");
+        PrintCStr("(Example Mod): Initialized");
         ExampleMod->IsInitialized = True;
     }
-    // The Renderer API should be pretty self-explanatory. If you're wondering
-    // how it works you can look at Render.h SDK header.
-    // Everything else that isn't there (where 'everything else' is just
-    // command execution) is hidden in our engine.
-    RenderBufClear(RenderBuf, Color3(0, 0, 0));
+    // Code below demonstrates the usage of the Renderer API. It should be
+    // self-explanatory, but if you wish to read more about how it works
+    // you can check the Render.h SDK header.
+    RenderBufDrawDebugText(RenderBuf, White, V2(30.0f, 30.0f), V2(2.0f, 2.0f));
 }
