@@ -5,7 +5,6 @@
 
 UpdateAndRender(UpdateAndRender)
 {
-    // TODO: Fix segfault
     if (!State->IsInitialized)
     {
         State->PermanentAlloc = MemAllocInit(ExtraMem, Kb(32));
