@@ -107,13 +107,26 @@ static inline Color Color3(Uint8 R, Uint8 G, Uint8 B)
 
 typedef struct
 {
-    Float32 X;
-    Float32 Y;
+    union
+    {
+        struct
+        {
+
+            Float32 X;
+            Float32 Y;
+        };
+
+        struct
+        {
+            Float32 W;
+            Float32 H;
+        };
+    };
 } Vector2;
 
 static inline Vector2 V2(Float32 X, Float32 Y)
 {
-    return (Vector2){X, Y};
+    return (Vector2){{{X, Y}}};
 }
 
 #endif

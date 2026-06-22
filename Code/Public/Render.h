@@ -20,6 +20,7 @@ typedef enum
     RenderCommand_None,
     RenderCommand_Clear,
     RenderCommand_DrawDebugText,
+    RenderCommand_DrawRect,
 } RenderCommand;
 
 // NOTE: Every command must start with this header for iterators sake.
@@ -56,6 +57,15 @@ typedef struct
     // NOTE: The final newline is not appended!
     char Str[];
 } RenderDrawDebugText;
+
+typedef struct
+{
+    RenderHeader Header;
+
+    Vector2 Pos;
+    Vector2 Size;
+    Color Color;
+} RenderDrawRect;
 
 typedef struct
 {
@@ -129,6 +139,22 @@ static inline Void RenderBufDrawDebugText(RenderBuf *RenderBuf, Color Color, Vec
 static inline Void RenderBufDrawCStr(RenderBuf *RenderBuf, Color Color, Vector2 Pos, Vector2 Scale, const char *Str)
 {
     RenderBufDrawDebugText(RenderBuf, Color, Pos, Scale, Str, CStrLen(Str));
+}
+
+static inline Void RenderBufDrawRect(RenderBuf *RenderBuf, Color Color, Vector2 Pos, Vector2 Size)
+{
+
+    RenderDrawRect *Cmd = (RenderDrawRect *)RenderBufPush(RenderBuf, sizeof(RenderDrawRect));
+
+    if (Cmd)
+    {
+        Cmd->Header.Type = RenderCommand_DrawRect;
+        Cmd->Header.Size = BufAlign(sizeof(RenderDrawRect));
+
+        Cmd->Pos = Pos;
+        Cmd->Size = Size;
+        Cmd->Color = Color;
+    }
 }
 
 static inline Void RenderBufReset(RenderBuf *RenderBuf)

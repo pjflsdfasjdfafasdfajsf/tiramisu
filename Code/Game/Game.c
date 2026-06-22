@@ -1,6 +1,7 @@
 //
 // NOTE: Main game file.
 //
+#include "Render.h"
 #include <SDK.h>
 
 UpdateAndRender(UpdateAndRender)
@@ -12,5 +13,5 @@ UpdateAndRender(UpdateAndRender)
     }
 
     RenderBufClear(RenderBuf, Black);
-    RenderBufDrawCStr(RenderBuf, White, V2(10.0f, 10.0f), V2(2.0f, 2.0f), "Hello, World!\n");
+    RenderBufDrawCStr(RenderBuf, Black, V2(10.0f, 10.0f), V2(2.0f, 2.0f), "Hello, World!\n");
 }

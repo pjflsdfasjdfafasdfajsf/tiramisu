@@ -2,6 +2,7 @@
 #include "Render.h"
 #include "Runtime.h"
 #include "SDL3/SDL_error.h"
+#include "SDL3/SDL_rect.h"
 #include "SDL3/SDL_render.h"
 #include "Types.h"
 
@@ -133,7 +134,30 @@ Void Render(SDL *App)
                 Assert(0);
             }
         }
+        break;
 
+        case RenderCommand_DrawRect:
+        {
+            RenderDrawRect *DrawRect = (RenderDrawRect *)Cmd;
+
+            if (!SDL_SetRenderDrawColor(App->Renderer, DrawRect->Color.R, DrawRect->Color.G, DrawRect->Color.B, DrawRect->Color.A))
+            {
+                LogCritical("%s", SDL_GetError());
+                Assert(0);
+            }
+
+            SDL_FRect Rect = {
+                DrawRect->Pos.X,
+                DrawRect->Pos.Y,
+                DrawRect->Size.W,
+                DrawRect->Size.H,
+            };
+            if (!SDL_RenderFillRect(App->Renderer, &Rect))
+            {
+                LogCritical("%s", SDL_GetError());
+                Assert(0);
+            }
+        }
         break;
 
         case RenderCommand_None:
