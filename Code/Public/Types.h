@@ -83,19 +83,6 @@ typedef size_t Usize;
 //  `Align` must be a power of 2.
 #define AlignUp(Val, Align) (((Val) + ((Align) - 1)) & ~((Align) - 1))
 
-static inline Uint32 CStrLen(const char *CStr)
-{
-    Assert(CStr);
-
-    Uint32 Len = 0;
-    while (CStr[Len])
-    {
-        Len++;
-    }
-
-    return Len;
-}
-
 //
 // NOTE: Structures.
 //

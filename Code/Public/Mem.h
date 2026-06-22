@@ -6,6 +6,10 @@
 
 #include "Types.h"
 
+//
+// NOTE: Allocators
+//
+
 // NOTE: This is a simple bump allocator.
 typedef struct
 {
@@ -53,6 +57,61 @@ static inline MemAlloc MemAllocInit(void *Mem, Uint32 Cap)
     Result.Used = 0;
 
     return Result;
+}
+
+//
+// NOTE: String utilities
+//
+
+static inline Uint32 CStrLen(const char *CStr)
+{
+    Assert(CStr);
+
+    Uint32 Len = 0;
+    while (CStr[Len])
+    {
+        Len++;
+    }
+
+    return Len;
+}
+
+//
+// NOTE: Memory utilities
+//
+
+static inline Void MemCopy(Void *DestInit, const Void *SrcInit, Usize Size)
+{
+    Assert(DestInit);
+    Assert(SrcInit);
+
+    if (Size == 0)
+    {
+        return;
+    }
+
+    Uint8 *Dest = (Uint8 *)DestInit;
+    const Uint8 *Src = (const Uint8 *)SrcInit;
+
+    for (Usize I = 0; I < Size; ++I)
+    {
+        Dest[I] = Src[I];
+    }
+}
+
+static inline Void MemNullTerminate(char *Buffer, Usize Cap, Usize Len)
+{
+    Assert(Buffer);
+    Assert(Cap > 0);
+
+    if (Len < Cap)
+    {
+        Buffer[Len] = '\0';
+    }
+    else
+    {
+        Buffer[Cap - 1] = '\0';
+    }
 }
 
 #endif

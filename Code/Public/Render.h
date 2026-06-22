@@ -7,6 +7,8 @@
 #define BUF_ALIGN 4
 StaticAssert(IsPow2(BUF_ALIGN));
 
+#define BufAlign(Value) AlignUp(Value, BUF_ALIGN)
+
 // NOTE:
 // 1. All positions are in pixels, where (0,0) is the top-left corner of the
 // screen
@@ -24,6 +26,7 @@ typedef enum
 typedef struct
 {
     RenderCommand Type;
+    // NOTE: Must store aligned size here!!!
     Uint32 Size;
 } RenderHeader;
 
@@ -31,6 +34,7 @@ typedef struct
 typedef struct
 {
     RenderHeader Header;
+
     Color Color;
 } RenderClear;
 
@@ -41,12 +45,16 @@ typedef struct
 // debugging.
 typedef struct
 {
-    // TODO: IMPLEMENT TEXT!!!
     RenderHeader Header;
+
     Vector2 Pos;
     Color Color;
     // NOTE: Scale multiplier.
     Vector2 Scale;
+
+    Uint32 StrLen;
+    // NOTE: The final newline is not appended!
+    char Str[];
 } RenderDrawDebugText;
 
 typedef struct
@@ -60,16 +68,17 @@ typedef struct
 
 static inline Void *RenderBufPush(RenderBuf *RenderBuf, Uint32 Bytes)
 {
+    Assert(RenderBuf);
     Assert(Bytes >= sizeof(RenderHeader)); // NOTE: Always must be room for the header.
 
-    Uint32 Aligned = AlignUp(Bytes, BUF_ALIGN);
+    Uint32 Aligned = BufAlign(Bytes);
 
     Bool HasSpace = (RenderBuf->Size + Aligned) <= RenderBuf->Cap;
     Assert(HasSpace);
 
     if (HasSpace)
     {
-        Uint32 Offset = AlignUp(RenderBuf->Size, BUF_ALIGN);
+        Uint32 Offset = BufAlign(RenderBuf->Size);
         Void *Result = RenderBuf->Mem + Offset;
         RenderBuf->Size = Offset + Aligned;
 
@@ -79,9 +88,6 @@ static inline Void *RenderBufPush(RenderBuf *RenderBuf, Uint32 Bytes)
     return 0;
 }
 
-// NOTE: Must store aligned size here as that is what Push actually reserved.
-#define HeaderSize(Type) AlignUp(sizeof(Type), BUF_ALIGN)
-
 static inline Void RenderBufClear(RenderBuf *RenderBuf, Color Color)
 {
     RenderClear *Cmd = (RenderClear *)RenderBufPush(RenderBuf, sizeof(RenderClear));
@@ -89,25 +95,40 @@ static inline Void RenderBufClear(RenderBuf *RenderBuf, Color Color)
     if (Cmd)
     {
         Cmd->Header.Type = RenderCommand_Clear;
-        Cmd->Header.Size = HeaderSize(RenderClear);
+        Cmd->Header.Size = BufAlign(sizeof(RenderClear));
 
         Cmd->Color = Color;
     }
 }
 
-static inline Void RenderBufDrawDebugText(RenderBuf *RenderBuf, Color Color, Vector2 Pos, Vector2 Scale)
+static inline Void RenderBufDrawDebugText(RenderBuf *RenderBuf, Color Color, Vector2 Pos, Vector2 Scale, const char *Str, Uint32 StrLen)
 {
-    RenderDrawDebugText *Cmd = (RenderDrawDebugText *)RenderBufPush(RenderBuf, sizeof(RenderDrawDebugText));
+    if (!Str || StrLen == 0)
+    {
+        return;
+    }
+
+    Uint32 StrCap = StrLen + 1;
+    Uint32 Size = sizeof(RenderDrawDebugText) + StrCap;
+    RenderDrawDebugText *Cmd = (RenderDrawDebugText *)RenderBufPush(RenderBuf, Size);
 
     if (Cmd)
     {
         Cmd->Header.Type = RenderCommand_DrawDebugText;
-        Cmd->Header.Size = HeaderSize(RenderDrawDebugText);
+        Cmd->Header.Size = BufAlign(Size);
 
         Cmd->Pos = Pos;
         Cmd->Color = Color;
         Cmd->Scale = Scale;
+
+        MemCopy(Cmd->Str, Str, StrLen);
+        MemNullTerminate(Cmd->Str, StrCap, StrLen);
     }
+}
+
+static inline Void RenderBufDrawCStr(RenderBuf *RenderBuf, Color Color, Vector2 Pos, Vector2 Scale, const char *Str)
+{
+    RenderBufDrawDebugText(RenderBuf, Color, Pos, Scale, Str, CStrLen(Str));
 }
 
 static inline Void RenderBufReset(RenderBuf *RenderBuf)

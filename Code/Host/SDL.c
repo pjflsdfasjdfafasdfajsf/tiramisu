@@ -126,12 +126,14 @@ Void Render(SDL *App)
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
             }
-            if (!SDL_RenderDebugText(App->Renderer, DrawDebugText->Pos.X, DrawDebugText->Pos.Y, "Hardcoded for now hi"))
+
+            if (!SDL_RenderDebugText(App->Renderer, DrawDebugText->Pos.X, DrawDebugText->Pos.Y, DrawDebugText->Str))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
             }
         }
+
         break;
 
         case RenderCommand_None:
