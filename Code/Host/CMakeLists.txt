@@ -20,12 +20,18 @@ FetchContent_Declare(
     GIT_TAG        26756a5c5846c262c9e5c89f3fc8e1e693ee2539
 )
 
+FetchContent_Declare(
+    STB
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG        31c1ad37456438565541f4919958214b6e762fb4
+)
+
 set(WAMR_BUILD_FAST_JIT 1 CACHE BOOL "Enable Fast JIT" FORCE)
 set(WAMR_BUILD_INTERP 0 CACHE BOOL "Disable Interpreter" FORCE)
 set(WAMR_BUILD_LIBC_BUILTIN 0 CACHE BOOL "Disable LibC" FORCE)
 set(WAMR_BUILD_SIMD 0 CACHE BOOL "Disable SIMD" FORCE)
 
-FetchContent_MakeAvailable(SDL3 WAMR)
+FetchContent_MakeAvailable(SDL3 WAMR STB)
 
 
 ###############################################
@@ -57,17 +63,55 @@ add_custom_target(Watch
 )
 
 ###############################################
+# Tools
+###############################################
+
+add_executable(AtlasPack
+    AtlasPack.c
+    STB.c 
+)
+
+target_include_directories(AtlasPack PRIVATE
+    ${stb_SOURCE_DIR}
+    ../Public
+)
+target_compile_options(AtlasPack PRIVATE
+    -O3
+)
+
+target_link_libraries(AtlasPack PRIVATE m)
+
+file(GLOB ASSET_IMAGES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../../Assets/Images/*.png")
+set(ATLAS_OUTPUT_PREFIX "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/GameAtlas")
+
+if(ASSET_IMAGES)
+    add_custom_command(
+        OUTPUT "${ATLAS_OUTPUT_PREFIX}.png" "${ATLAS_OUTPUT_PREFIX}.txt"
+        COMMAND $<TARGET_FILE:AtlasPack> "${ATLAS_OUTPUT_PREFIX}" ${ASSET_IMAGES}
+        DEPENDS AtlasPack ${ASSET_IMAGES}
+        VERBATIM
+    )
+    add_custom_target(GenerateAtlas DEPENDS "${ATLAS_OUTPUT_PREFIX}.png" "${ATLAS_OUTPUT_PREFIX}.txt")
+else()
+    add_custom_target(GenerateAtlas
+        COMMAND ${CMAKE_COMMAND} -E echo "Atlas generation will be skipped"
+    )
+endif()
+
+###############################################
 # Executable
 ###############################################
 
 add_executable(App
     Main.c
     SDL.c
+    STB.c
     Runtime.c
 )
 
 target_include_directories(App PRIVATE
     ${wamr_SOURCE_DIR}/core/iwasm/include
+    ${stb_SOURCE_DIR}
     ../Public
 )
 
@@ -85,8 +129,5 @@ target_link_options(App PRIVATE
 )
 
 target_link_libraries(App PRIVATE SDL3::SDL3 vmlib m)
-add_custom_command(TARGET App POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${GAME_BINARY_DIR}/Game.wasm"
-        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Game.wasm"
-)
+
+add_dependencies(App GenerateAtlas)

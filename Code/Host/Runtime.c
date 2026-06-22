@@ -1,58 +1,40 @@
 //
 // NOTE: WASM Runtime implementation.
-// 
+//
 #include "Runtime.h"
 #include "SDK.h"
 #include "SDL.h"
 
 #include "wasm_export.h"
 
-//
-// NOTE: Host-provided funcs.
-//
-
-static Void HostPrintLine(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uint32 Len)
-{
-    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
-    if (!wasm_runtime_validate_app_str_addr(ModuleInst, PtrOffset))
-    {
-        LogCritical("Memory bounds violation.\n");
-        return;
-    }
-
-    const char *Ptr = (const char *)wasm_runtime_addr_app_to_native(ModuleInst, PtrOffset);
-    if (Ptr && Len > 0)
-    {
-        SDL_Log("%.*s\n", (Int32)Len, Ptr);
-    }
-}
-
-//
-// NOTE: Implementation.
-//
-
-Runtime RtInit(Void)
+Bool RtGlobalInit(Void)
 {
     // NOTE: This is needed since wasm_runtime_full_init only must be called once.
     static Bool IsInitialized = False;
-    Runtime Result = {0};
-
-    if (!IsInitialized)
+    if (IsInitialized)
     {
-        RuntimeInitArgs InitArgs = {0};
-        InitArgs.mem_alloc_type = Alloc_With_Allocator;
-        InitArgs.mem_alloc_option.allocator.malloc_func = SDL_malloc;
-        InitArgs.mem_alloc_option.allocator.realloc_func = SDL_realloc;
-        InitArgs.mem_alloc_option.allocator.free_func = SDL_free;
-
-        if (!wasm_runtime_full_init(&InitArgs))
-        {
-            LogCritical("wasm_runtime_full_init\n");
-            return Result;
-        }
-
-        IsInitialized = True;
+        return True;
     }
+
+    RuntimeInitArgs InitArgs = {0};
+    InitArgs.mem_alloc_type = Alloc_With_Allocator;
+    InitArgs.mem_alloc_option.allocator.malloc_func = SDL_malloc;
+    InitArgs.mem_alloc_option.allocator.realloc_func = SDL_realloc;
+    InitArgs.mem_alloc_option.allocator.free_func = SDL_free;
+
+    if (!wasm_runtime_full_init(&InitArgs))
+    {
+        LogCritical("wasm_runtime_full_init\n");
+        return False;
+    }
+
+    IsInitialized = True;
+    return True;
+}
+
+Runtime RtInit(Void)
+{
+    Runtime Result = {0};
 
     Result.IsValid = True;
     return Result;
@@ -100,14 +82,6 @@ Bool RtLoadOne(Runtime *Rt, const char *Path)
     }
 
     char ErrorBuf[128];
-
-    NativeSymbol Natives[] = {
-        {"PrintLine", HostPrintLine, "(ii)", 0}};
-    if (!wasm_runtime_register_natives("env", Natives, sizeof(Natives) / sizeof(Natives[0])))
-    {
-        LogCritical("wasm_runtime_register_natives\n");
-        return False;
-    }
 
     Rt->Module = wasm_runtime_load((Uint8 *)Rt->Bytes, (Uint32)Size, ErrorBuf, sizeof(ErrorBuf));
     if (!Rt->Module)
@@ -233,10 +207,10 @@ Bool RtUpdate(Runtime *Rt, State *HostState, RenderBuf *HostRenderBuf)
 
     Void *RenderBufMem = (Void *)wasm_runtime_addr_app_to_native(Rt->ModuleInst, RenderBufMemOffset);
 
-    Void *Dest = RenderBufPush(HostRenderBuf, RenderBufSizeOffset);
-    if (Dest)
+    Void *Dst = RenderBufPush(HostRenderBuf, RenderBufSizeOffset);
+    if (Dst)
     {
-        SDL_memcpy(Dest, RenderBufMem, RenderBufSizeOffset);
+        SDL_memcpy(Dst, RenderBufMem, RenderBufSizeOffset);
         NativeRenderBuf[1] = 0;
     }
     else

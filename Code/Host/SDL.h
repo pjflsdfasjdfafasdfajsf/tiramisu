@@ -33,6 +33,10 @@ typedef struct
     MemAlloc MemAlloc;
     RenderBuf RenderBuf;
 
+    // NOTE: Textures
+    SDL_Texture *Texs[512];
+    Uint32 TexCount;
+
     State State;
 } SDL;
 

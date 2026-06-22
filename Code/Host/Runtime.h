@@ -1,9 +1,8 @@
 #if !defined(HOST_H)
 #define HOST_H
 
-#include "wasm_export.h"
-
 #include "SDK.h"
+#include "wasm_export.h"
 
 typedef struct
 {
@@ -27,10 +26,12 @@ typedef struct
     Bool IsValid;
 } Runtime;
 
+Bool RtGlobalInit(Void);
+// NOTE: RtGlobalInit must have been called before.
 Runtime RtInit(Void);
 Void RtDeinit(Runtime *Rt);
 
-Bool RtLoadOne(Runtime *Rt, const char *File);
+Bool RtLoadOne(Runtime *Rt, const char *Path);
 
 Bool RtUpdate(Runtime *Rt, State *RuntimeState, RenderBuf *RuntimeRenderBuf);
 

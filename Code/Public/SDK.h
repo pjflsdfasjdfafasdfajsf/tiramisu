@@ -13,16 +13,19 @@
 #define Import(Name)
 #endif
 
-// NOTE: This provides all the functions you need.
-
 typedef struct State
 {
+    TexHandle SpriteAtlas;
     Bool IsInitialized;
 } State;
 
 // NOTE: `State` is the game state and `ExtraMem` is memory for allocating your own state struct if you need it.
 typedef Void UpdateAndRenderFunction(State *State, RenderBuf *RenderBuf, Void *ExtraMem);
 #define UpdateAndRender(Name) Export("UpdateAndRender") Void Name(State *State, Void *ExtraMem, RenderBuf *RenderBuf)
+
+//
+// NOTE: Imports.
+// 
 
 Import("PrintLine") Void PrintLine(const char *Ptr, Uint32 Len);
 static inline Void PrintCStr(const char *Str)
@@ -36,5 +39,14 @@ static inline Void PrintCStr(const char *Str)
 
     PrintLine(Str, CStrLen(Str));
 }
+
+// TODO: This should just take in Memory, Size
+//
+// NOTE: It is highly recommend to minimize calls to this function. One of the
+// ways you could do that is texture atlases, the whole Renderer API is pretty
+// much built around it already. You can look in Example Mod for details.
+// 
+// Supported image formats: PNG, JPEG, TGA, BMP, PSD, GIF, HDR, PIC.
+Import("AllocTexture") TexHandle AllocTexture(const char *Path);
 
 #endif

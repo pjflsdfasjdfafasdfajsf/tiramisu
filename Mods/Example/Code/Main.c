@@ -38,5 +38,5 @@ UpdateAndRender(UpdateAndRender)
     // Code below demonstrates the usage of the Renderer API. It should be
     // self-explanatory, but if you wish to read more about how it works
     // you can check the Render.h SDK header.
-    RenderBufDrawCStr(RenderBuf, White, V2(30.0f, 30.0f), V2(2.0f, 2.0f), "Hello, Example Mod!\n");
+    RenderBufDrawCStr(RenderBuf, White, V2Make(30.0f, 30.0f), V2Make(2.0f, 2.0f), "Hello, Example Mod!\n");
 }

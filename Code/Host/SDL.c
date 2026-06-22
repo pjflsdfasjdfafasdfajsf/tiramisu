@@ -1,16 +1,99 @@
 #include "SDL.h"
 #include "Render.h"
-#include "Runtime.h"
-#include "SDL3/SDL_error.h"
-#include "SDL3/SDL_rect.h"
-#include "SDL3/SDL_render.h"
-#include "Types.h"
+#include "STB.h"
+
+#define GAME_WASM_FILE "Game.wasm"
+
+//
+// NOTE: Host-provided funcs.
+//
+
+static Void HostPrintLine(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uint32 Len)
+{
+    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
+    if (!wasm_runtime_validate_app_str_addr(ModuleInst, PtrOffset))
+    {
+        LogCritical("Memory bounds violation.\n");
+        return;
+    }
+
+    const char *Ptr = (const char *)wasm_runtime_addr_app_to_native(ModuleInst, PtrOffset);
+    if (Ptr && Len > 0)
+    {
+        SDL_Log("%.*s\n", (Int32)Len, Ptr);
+    }
+}
+
+static TexHandle HostAllocTexture(wasm_exec_env_t ExecEnv, Uint32 PtrOffset)
+{
+    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
+
+    if (!wasm_runtime_validate_app_str_addr(ModuleInst, PtrOffset))
+    {
+        LogCritical("Memory bounds violation.\n");
+
+        return TexHandleInvalid;
+    }
+
+    const char *Path = (const char *)wasm_runtime_addr_app_to_native(ModuleInst, PtrOffset);
+    if (!Path)
+    {
+        LogCritical("Invalid pointer.\n");
+
+        return TexHandleInvalid;
+    }
+
+    SDL_Log("Texture allocation request: %s\n", Path);
+
+    SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
+    Assert(App);
+
+    if (App->TexCount >= ArrayCount(App->Texs))
+    {
+        LogCritical("Too many textures.\n");
+
+        return TexHandleInvalid;
+    }
+
+    Int32 Width = 0;
+    Int32 Height = 0;
+    Int32 Channels = 0;
+
+    Uint8 *Pixels = stbi_load(Path, &Width, &Height, &Channels, 4);
+    if (!Pixels)
+    {
+        LogCritical("%s\n", stbi_failure_reason());
+
+        return TexHandleInvalid;
+    }
+
+    SDL_Texture *Tex = SDL_CreateTexture(App->Renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, Width, Height);
+    if (!Tex)
+    {
+        LogCritical("%s\n", SDL_GetError());
+
+        return TexHandleInvalid;
+    }
+
+    if (!SDL_UpdateTexture(Tex, 0, Pixels, Width * 4))
+    {
+        LogCritical("%s\n", SDL_GetError());
+
+        return TexHandleInvalid;
+    }
+
+    stbi_image_free(Pixels);
+
+    TexHandle Handle = App->TexCount;
+    App->Texs[Handle] = Tex;
+    App->TexCount++;
+
+    return Handle;
+}
 
 //
 // NOTE: Internal
 //
-
-#define GAME_WASM_FILE "Game.wasm"
 
 static inline Int64 GetFileModTime(const char *Path)
 {
@@ -140,22 +223,67 @@ Void Render(SDL *App)
         {
             RenderDrawRect *DrawRect = (RenderDrawRect *)Cmd;
 
-            if (!SDL_SetRenderDrawColor(App->Renderer, DrawRect->Color.R, DrawRect->Color.G, DrawRect->Color.B, DrawRect->Color.A))
-            {
-                LogCritical("%s", SDL_GetError());
-                Assert(0);
-            }
-
-            SDL_FRect Rect = {
-                DrawRect->Pos.X,
-                DrawRect->Pos.Y,
-                DrawRect->Size.W,
-                DrawRect->Size.H,
+            SDL_FRect DstRect = {
+                DrawRect->Dst.Pos.X,
+                DrawRect->Dst.Pos.Y,
+                DrawRect->Dst.Size.W,
+                DrawRect->Dst.Size.H,
             };
-            if (!SDL_RenderFillRect(App->Renderer, &Rect))
+
+            if (DrawRect->Tex == TexHandleInvalid)
             {
-                LogCritical("%s", SDL_GetError());
-                Assert(0);
+                // NOTE: Untextured Rectangle
+                if (!SDL_SetRenderDrawColor(App->Renderer, DrawRect->Color.R, DrawRect->Color.G, DrawRect->Color.B, DrawRect->Color.A))
+                {
+                    LogCritical("%s", SDL_GetError());
+                    Assert(0);
+                }
+
+                if (!SDL_RenderFillRect(App->Renderer, &DstRect))
+                {
+                    LogCritical("%s", SDL_GetError());
+                    Assert(0);
+                }
+            }
+            else
+            {
+                // NOTE: Textured Rectangle
+                if (DrawRect->Tex >= App->TexCount)
+                {
+                    LogCritical("Invalid texture handle: %d", DrawRect->Tex);
+                    Assert(0);
+                    break;
+                }
+
+                SDL_Texture *Tex = App->Texs[DrawRect->Tex];
+                if (!Tex)
+                {
+                    LogCritical("Attempted to draw null texture at handle: %d", DrawRect->Tex);
+                    Assert(0);
+                    break;
+                }
+
+                SDL_SetTextureColorMod(Tex, DrawRect->Color.R, DrawRect->Color.G, DrawRect->Color.B);
+                SDL_SetTextureAlphaMod(Tex, DrawRect->Color.A);
+
+                SDL_FRect SrcRect = {
+                    DrawRect->Src.Pos.X,
+                    DrawRect->Src.Pos.Y,
+                    DrawRect->Src.Size.W,
+                    DrawRect->Src.Size.H,
+                };
+
+                SDL_FRect *SrcPtr = &SrcRect;
+                if (DrawRect->Src.Pos.X == 0 && DrawRect->Src.Pos.Y == 0 && DrawRect->Src.Size.W == 0)
+                {
+                    SrcPtr = 0;
+                }
+
+                if (!SDL_RenderTexture(App->Renderer, Tex, SrcPtr, &DstRect))
+                {
+                    LogCritical("%s", SDL_GetError());
+                    Assert(0);
+                }
             }
         }
         break;
@@ -181,8 +309,12 @@ Void Update(SDL *App)
     for (Uint32 I = 0; I < App->ModCount; ++I)
     {
         Mod *Mod = &App->Mods[I];
-        Int64 CurrentTime = GetFileModTime(Mod->Path);
+        if (Mod->Rt.ModuleInst)
+        {
+            wasm_runtime_set_custom_data(Mod->Rt.ModuleInst, App);
+        }
 
+        Int64 CurrentTime = GetFileModTime(Mod->Path);
         if (CurrentTime > Mod->LastWriteTime && CurrentTime)
         {
             SDL_Delay(50);
@@ -257,6 +389,23 @@ SDL Init()
 
     Result.RenderBuf = RenderBufInit(&Result.MemAlloc, Kb(32));
     if (!Result.RenderBuf.IsValid)
+    {
+        Assert(0);
+    }
+
+    if (!RtGlobalInit())
+    {
+        Assert(0);
+    }
+
+    //
+    // NOTE: Natives.
+    //
+
+    NativeSymbol Natives[] = {
+        {"PrintLine", (void *)HostPrintLine, "(ii)", 0},
+        {"AllocTexture", (void *)HostAllocTexture, "(i)i", 0}};
+    if (!wasm_runtime_register_natives("env", Natives, sizeof(Natives) / sizeof(Natives[0])))
     {
         Assert(0);
     }

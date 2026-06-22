@@ -16,7 +16,9 @@ ExternalProject_Add(Game
     CMAKE_ARGS 
         "-DCMAKE_TOOLCHAIN_FILE=${GAME_SOURCE_DIR}/Toolchain.cmake"
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
-    INSTALL_COMMAND ""
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${GAME_BINARY_DIR}/Game.wasm"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Game.wasm"
     BUILD_ALWAYS ON   
 )
 

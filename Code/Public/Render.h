@@ -10,10 +10,12 @@ StaticAssert(IsPow2(BUF_ALIGN));
 #define BufAlign(Value) AlignUp(Value, BUF_ALIGN)
 
 // NOTE:
-// 1. All positions are in pixels, where (0,0) is the top-left corner of the
-// screen
+// 1. All positions are in pixels, with origin for everyone being the top-left.
 // 2. Intenally renderer uses letterboxing with the resolution of 1280x720
 // TODO: Probably will have more to say later
+
+typedef Uint32 TexHandle;
+#define TexHandleInvalid 0xFFFFFFFF
 
 typedef enum
 {
@@ -48,10 +50,10 @@ typedef struct
 {
     RenderHeader Header;
 
-    Vector2 Pos;
+    V2 Pos;
     Color Color;
     // NOTE: Scale multiplier.
-    Vector2 Scale;
+    V2 Scale;
 
     Uint32 StrLen;
     // NOTE: The final newline is not appended!
@@ -62,8 +64,18 @@ typedef struct
 {
     RenderHeader Header;
 
-    Vector2 Pos;
-    Vector2 Size;
+    // NOTE: This can be TexHandleInvalid for a regular untextured rectangle.
+    TexHandle Tex;
+
+    // NOTE: Where on screen to draw the rectangle.
+    Rect Dst;
+    // NOTE: Which part of the texture draw. If Src.Pos is 0,0, then the entire
+    // image is drawn.
+    // This is fully ignored if Tex is TexHandleInvalid.
+    Rect Src;
+
+    // NOTE: If Tex is TexHandleInvalid then it's the color of the rectangle.
+    // Otherwise acts as a tint. For unmodified keep it as White.
     Color Color;
 } RenderDrawRect;
 
@@ -111,7 +123,7 @@ static inline Void RenderBufClear(RenderBuf *RenderBuf, Color Color)
     }
 }
 
-static inline Void RenderBufDrawDebugText(RenderBuf *RenderBuf, Color Color, Vector2 Pos, Vector2 Scale, const char *Str, Uint32 StrLen)
+static inline Void RenderBufDrawDebugText(RenderBuf *RenderBuf, Color Color, V2 Pos, V2 Scale, const char *Str, Uint32 StrLen)
 {
     if (!Str || StrLen == 0)
     {
@@ -136,14 +148,17 @@ static inline Void RenderBufDrawDebugText(RenderBuf *RenderBuf, Color Color, Vec
     }
 }
 
-static inline Void RenderBufDrawCStr(RenderBuf *RenderBuf, Color Color, Vector2 Pos, Vector2 Scale, const char *Str)
+static inline Void RenderBufDrawCStr(RenderBuf *RenderBuf, Color Color, V2 Pos, V2 Scale, const char *Str)
 {
     RenderBufDrawDebugText(RenderBuf, Color, Pos, Scale, Str, CStrLen(Str));
 }
 
-static inline Void RenderBufDrawRect(RenderBuf *RenderBuf, Color Color, Vector2 Pos, Vector2 Size)
+// NOTE: If you're thinking 'It is too inconvinient to pass Dst and Src
+// everytime!' then you're probably doing something wrong. Standard untextured
+// rectangles shouldn't be a thing you do very often and if you're actually
+// using spritesheets like intended it should not seem as inconvinient.
+static inline Void RenderBufDrawRect(RenderBuf *RenderBuf, TexHandle Tex, Rect Dst, Rect Src, Color Color)
 {
-
     RenderDrawRect *Cmd = (RenderDrawRect *)RenderBufPush(RenderBuf, sizeof(RenderDrawRect));
 
     if (Cmd)
@@ -151,8 +166,9 @@ static inline Void RenderBufDrawRect(RenderBuf *RenderBuf, Color Color, Vector2 
         Cmd->Header.Type = RenderCommand_DrawRect;
         Cmd->Header.Size = BufAlign(sizeof(RenderDrawRect));
 
-        Cmd->Pos = Pos;
-        Cmd->Size = Size;
+        Cmd->Tex = Tex;
+        Cmd->Dst = Dst;
+        Cmd->Src = Src;
         Cmd->Color = Color;
     }
 }
