@@ -4,14 +4,6 @@
 # 
 set -e
 
-Compiler="clang"
-CommonCompilerFlags="-ICode/Public"
-
-VendorLibs="Ext/SDL3/Bin/Linux/libSDL3.a Ext/WAMR/Bin/Linux/libiwasm.a"
-SystemLibs="-lm -lpthread -ldl -lrt -lstdc++"
-
-LinkerFlags="${VendorLibs} ${SystemLibs}"
-
 # NOTE: Dirs.
 
 AssetsDir="Assets"
@@ -23,6 +15,16 @@ mkdir -p ${BuildDir} \
 
 # NOTE: This is for printing.
 Align="%-15s"
+
+# NOTE: Compiler.
+
+Compiler="clang"
+CommonCompilerFlags="-ICode/Public -I${BuildDir}"
+
+VendorLibs="Ext/SDL3/Bin/Linux/libSDL3.a Ext/WAMR/Bin/Linux/libiwasm.a"
+SystemLibs="-lm -lpthread -ldl -lrt -lstdc++"
+
+LinkerFlags="${VendorLibs} ${SystemLibs}"
 
 #
 # NOTE: Atlas
@@ -45,17 +47,15 @@ fi
 
 # NOTE: If the atlas does not exist we do not care about what user passed in and
 # we should create it
-if [ ! -f ${AtlasPackTarget} ] || [ ! -f ${GameAtlas}.png ]; then
+if [ ! -f ${AtlasPackTarget} ] || [ ! -f ${GameAtlas}.h ]; then
     ShouldPack=1
 fi
 
 if [ ${ShouldPack} -eq 1 ]; then
-    printf ${Align} "AtlasPack"
+    printf ${Align} "Sprite Atlas"
 
     ${Compiler} ${AtlasPackFlags} ${AtlasPackSrc} ${AtlasPackLinkerFlags} -o ${AtlasPackTarget}
-    printf "Done\n"
 
-    printf ${Align} "Packing"
     ${AtlasPackTarget} ${GameAtlas} ${AssetsDir}/Images/*
     printf "Done\n"
 fi
@@ -70,7 +70,7 @@ HostSrc="Code/Host/Main.c    \
          Code/Host/STB.c     \
          Code/Host/SDL.c
         "
-HostTarget="${BuildDir}/Host"
+HostTarget="${BuildDir}/Game"
 HostFlags="${CommonCompilerFlags} -IExt/WAMR/Include -IExt/SDL3/Include -IExt/STB"
 
 ${Compiler} ${HostFlags} ${HostSrc} ${LinkerFlags} -o ${HostTarget}

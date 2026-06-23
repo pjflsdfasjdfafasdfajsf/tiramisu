@@ -1,6 +1,7 @@
 #include "SDL.h"
 #include "Render.h"
 #include "STB.h"
+#include "wasm_export.h"
 
 #define GAME_WASM_FILE "Game.wasm"
 
@@ -24,7 +25,7 @@ static Void HostPrintLine(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uint32 Len)
     }
 }
 
-static TexHandle HostAllocTexture(wasm_exec_env_t ExecEnv, Uint32 PtrOffset)
+static TexHandle HostAllocTexture(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uint32 Size)
 {
     wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
 
@@ -35,15 +36,15 @@ static TexHandle HostAllocTexture(wasm_exec_env_t ExecEnv, Uint32 PtrOffset)
         return TexHandleInvalid;
     }
 
-    const char *Path = (const char *)wasm_runtime_addr_app_to_native(ModuleInst, PtrOffset);
-    if (!Path)
+    const Uint8 *Mem = (const Uint8 *)wasm_runtime_addr_app_to_native(ModuleInst, PtrOffset);
+    if (!Mem || Size == 0)
     {
-        LogCritical("Invalid pointer.\n");
+        LogCritical("Invalid pointer or size.\n");
 
         return TexHandleInvalid;
     }
 
-    SDL_Log("Texture allocation request: %s\n", Path);
+    SDL_Log("Texture allocation request for %u bytes.\n", Size);
 
     SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
     Assert(App);
@@ -59,7 +60,7 @@ static TexHandle HostAllocTexture(wasm_exec_env_t ExecEnv, Uint32 PtrOffset)
     Int32 Height = 0;
     Int32 Channels = 0;
 
-    Uint8 *Pixels = stbi_load(Path, &Width, &Height, &Channels, 4);
+    Uint8 *Pixels = stbi_load_from_memory(Mem, Size, &Width, &Height, &Channels, 4);
     if (!Pixels)
     {
         LogCritical("%s\n", stbi_failure_reason());
@@ -404,7 +405,7 @@ SDL Init()
 
     NativeSymbol Natives[] = {
         {"PrintLine", (void *)HostPrintLine, "(ii)", 0},
-        {"AllocTexture", (void *)HostAllocTexture, "(i)i", 0}};
+        {"AllocTexture", (void *)HostAllocTexture, "(ii)i", 0}};
     if (!wasm_runtime_register_natives("env", Natives, sizeof(Natives) / sizeof(Natives[0])))
     {
         Assert(0);

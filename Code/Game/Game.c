@@ -3,19 +3,16 @@
 //
 #include <SDK.h>
 
+#include "GameAtlas.h"
+
 UpdateAndRender(UpdateAndRender)
 {
     if (!State->IsInitialized)
     {
         State->PermanentAlloc = MemAllocInit(ExtraMem, Kb(32));
 
-        State->SpriteAtlasTex = AllocTexture("GameAtlas.png");
-
-        // TODO: No abs path :(
-        const char *Meta = "/home/me/Workspace/Game/Code/Host/../../Assets/Images/ExcitedMan.png 0 0 275 183\n";
-        Uint32 MetaLen = CStrLen(Meta);
-
-        State->SpriteAtlas = AtlasInit(&State->PermanentAlloc, State->SpriteAtlasTex, Meta, MetaLen);
+        State->SpriteAtlasTex = AllocTexture(GenGameAtlas, GenGameAtlasLen);
+        State->SpriteAtlas = AtlasInit(&State->PermanentAlloc, State->SpriteAtlasTex, GenGameAtlasMeta, GenGameAtlasMetaLen);
 
         PrintCStr("(Game): Initialized");
         State->IsInitialized = True;
