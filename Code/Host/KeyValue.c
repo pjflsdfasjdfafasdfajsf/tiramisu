@@ -134,7 +134,7 @@ KeyValueList KeyValueParse(MemAlloc *Alloc, const char *Src, Uint32 SrcLen)
     KeyValuePair *Pairs = 0;
     if (PairCount > 0)
     {
-        Pairs = (KeyValuePair *)MemAllocPush(Alloc, PairCount * sizeof(KeyValuePair), 8);
+        Pairs = (KeyValuePair *)MemAllocPush(Alloc, PairCount * sizeof(KeyValuePair));
         if (!Pairs)
         {
             Result.HasError = True;

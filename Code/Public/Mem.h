@@ -16,7 +16,11 @@ typedef struct
 
 MemAlloc MemAllocInit(void *Mem, Uint32 Cap);
 
-Void *MemAllocPush(MemAlloc *MemAlloc, Uint32 Bytes, Uint32 Align);
+// NOTE: If you stumbled upont this accidentally -- use MemAllocPush. This
+// function is for more complex usecases where you need alignment.
+Void *MemAllocPushEx(MemAlloc *MemAlloc, Uint32 Bytes, Uint32 Align);
+Void *MemAllocPush(MemAlloc *MemAlloc, Uint32 Bytes);
+
 Void MemAllocClear(MemAlloc *MemAlloc);
 
 //

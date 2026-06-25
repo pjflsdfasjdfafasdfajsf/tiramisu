@@ -5,10 +5,10 @@
 #include "Math.h"
 #include "Types.h"
 
-#define BUF_ALIGN 4
-StaticAssert(IsPow2(BUF_ALIGN));
+#define BufAlign 4
+StaticAssert(IsPow2(BufAlign));
 
-#define BufAlign(Value) AlignUp(Value, BUF_ALIGN)
+#define BufAlignUp(Value) AlignUp(Value, BufAlign)
 
 // NOTE:
 // 1. All positions are in pixels, with origin for everyone being the top-left.

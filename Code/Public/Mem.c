@@ -5,6 +5,8 @@
 // NOTE: MemAlloc
 //
 
+#define MemAllocDefaultAlign 4
+
 MemAlloc MemAllocInit(void *Mem, Uint32 Cap)
 {
     MemAlloc Result = {};
@@ -19,7 +21,7 @@ MemAlloc MemAllocInit(void *Mem, Uint32 Cap)
     return Result;
 }
 
-Void *MemAllocPush(MemAlloc *MemAlloc, Uint32 Bytes, Uint32 Align)
+Void *MemAllocPushEx(MemAlloc *MemAlloc, Uint32 Bytes, Uint32 Align)
 {
     Assert(Bytes > 0);
     Assert(IsPow2(Align));
@@ -39,6 +41,11 @@ Void *MemAllocPush(MemAlloc *MemAlloc, Uint32 Bytes, Uint32 Align)
     }
 
     return 0;
+}
+
+Void *MemAllocPush(MemAlloc *MemAlloc, Uint32 Bytes)
+{
+    return MemAllocPushEx(MemAlloc, Bytes, MemAllocDefaultAlign);
 }
 
 Void MemAllocClear(MemAlloc *MemAlloc)

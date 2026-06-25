@@ -9,7 +9,7 @@ RenderBuf RenderBufInit(MemAlloc *MemAlloc, Uint32 Cap)
     Assert(MemAlloc);
     Assert(Cap > 0);
 
-    Result.Mem = (Uint8 *)MemAllocPush(MemAlloc, Cap, BUF_ALIGN);
+    Result.Mem = (Uint8 *)MemAllocPush(MemAlloc, Cap);
     if (Result.Mem)
     {
         Result.Size = 0;
@@ -27,14 +27,14 @@ Void *RenderBufPush(RenderBuf *RenderBuf, Uint32 Bytes)
     Assert(RenderBuf);
     Assert(Bytes >= sizeof(RenderHeader)); // NOTE: Always must be room for the header.
 
-    Uint32 Aligned = BufAlign(Bytes);
+    Uint32 Aligned = BufAlignUp(Bytes);
 
     Bool HasSpace = (RenderBuf->Size + Aligned) <= RenderBuf->Cap;
     Assert(HasSpace);
 
     if (HasSpace)
     {
-        Uint32 Offset = BufAlign(RenderBuf->Size);
+        Uint32 Offset = BufAlignUp(RenderBuf->Size);
         Void *Result = RenderBuf->Mem + Offset;
         RenderBuf->Size = Offset + Aligned;
 
@@ -51,7 +51,7 @@ Void RenderBufClear(RenderBuf *RenderBuf, Color Color)
     if (Cmd)
     {
         Cmd->Header.Type = RenderCommand_Clear;
-        Cmd->Header.Size = BufAlign(sizeof(RenderClear));
+        Cmd->Header.Size = BufAlignUp(sizeof(RenderClear));
 
         Cmd->Color = Color;
     }
@@ -71,7 +71,7 @@ Void RenderBufDrawDebugText(RenderBuf *RenderBuf, Color Color, V2 Pos, V2 Scale,
     if (Cmd)
     {
         Cmd->Header.Type = RenderCommand_DrawDebugText;
-        Cmd->Header.Size = BufAlign(Size);
+        Cmd->Header.Size = BufAlignUp(Size);
 
         Cmd->Pos = Pos;
         Cmd->Color = Color;
@@ -94,7 +94,7 @@ Void RenderBufDrawRect(RenderBuf *RenderBuf, TexHandle Tex, Rect Dst, Rect Src, 
     if (Cmd)
     {
         Cmd->Header.Type = RenderCommand_DrawRect;
-        Cmd->Header.Size = BufAlign(sizeof(RenderDrawRect));
+        Cmd->Header.Size = BufAlignUp(sizeof(RenderDrawRect));
 
         Cmd->Tex = Tex;
         Cmd->Dst = Dst;
@@ -149,7 +149,7 @@ Atlas AtlasInit(MemAlloc *Alloc, TexHandle Tex, const char *Meta, Uint32 MetaLen
         return Result;
     }
 
-    Result.Entries = (AtlasEntry *)MemAllocPush(Alloc, sizeof(AtlasEntry) * LineCount, 4);
+    Result.Entries = (AtlasEntry *)MemAllocPush(Alloc, sizeof(AtlasEntry) * LineCount);
     if (!Result.Entries)
     {
         return Result;

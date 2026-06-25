@@ -10,12 +10,12 @@ UpdateAndRender(UpdateAndRender)
         State->PermanentAlloc = MemAllocInit(ExtraMem, Mb(2));
 
         Uint32 Size = ReadFileCStr("GameAtlas.png", 0, 0);
-        Void *Buf = MemAllocPush(&State->PermanentAlloc, Size, 4);
+        Void *Buf = MemAllocPush(&State->PermanentAlloc, Size);
         ReadFileCStr("GameAtlas.png", Buf, Size);
         State->SpriteAtlasTex = AllocTexture(Buf, Size);
 
         Size = ReadFileCStr("GameAtlas.txt", 0, 0);
-        Buf = MemAllocPush(&State->PermanentAlloc, Size + 1, 4);
+        Buf = MemAllocPush(&State->PermanentAlloc, Size + 1);
         ReadFileCStr("GameAtlas.txt", Buf, Size);
         State->SpriteAtlas = AtlasInit(&State->PermanentAlloc, State->SpriteAtlasTex, Buf, Size);
 
