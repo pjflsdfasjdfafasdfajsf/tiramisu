@@ -289,6 +289,7 @@ static Bool LoadOneMod(Mod *Mod, const char *ZipPath)
 
     char PathBuf[1024];
     Usize PathLen = SDL_strlen(ZipPath);
+    // TODO: Recurse into directories
     if (PathLen > 4 && SDL_strcmp(ZipPath + PathLen - 4, ".zip") == 0)
     {
         SDL_memcpy(PathBuf, ZipPath, PathLen - 4);
