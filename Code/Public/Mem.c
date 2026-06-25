@@ -164,6 +164,109 @@ const Uint8 *MemReaderReadBytes(MemReader *R, Usize Bytes)
     return Result;
 }
 
+Void MemReaderRefillBits(MemReader *R, Uint32 Num)
+{
+    Assert(R);
+    Assert(Num <= 24);
+
+    if (R->HasError)
+    {
+        return;
+    }
+
+    while (R->BitCount < Num)
+    {
+        if (R->Pos < R->Size)
+        {
+            R->BitBuf |= (Uint32)R->Base[R->Pos] << R->BitCount;
+            R->Pos++;
+            R->BitCount += 8;
+        }
+        else
+        {
+            R->HasError = True;
+            break;
+        }
+    }
+}
+
+Uint32 MemReaderGetBits(MemReader *R, Uint32 Num)
+{
+    Assert(R);
+    Assert(Num <= 24);
+
+    if (R->HasError)
+    {
+        return 0;
+    }
+
+    MemReaderRefillBits(R, Num);
+    if (R->HasError)
+    {
+        return 0;
+    }
+
+    Uint32 Mask = 0;
+    if (Num > 0)
+    {
+        Mask = (1U << Num) - 1U;
+    }
+
+    Uint32 Value = R->BitBuf & Mask;
+
+    R->BitBuf >>= Num;
+    R->BitCount -= Num;
+
+    return Value;
+}
+
+Uint32 MemReaderGetBitsBase(MemReader *R, Uint32 Num, Uint32 Base)
+{
+    Assert(R);
+
+    if (R->HasError)
+    {
+        return 0;
+    }
+
+    Uint32 Extra = 0;
+    if (Num > 0)
+    {
+        Extra = MemReaderGetBits(R, Num);
+    }
+
+    return Base + Extra;
+}
+
+Void MemReaderAlignToByteBoundary(MemReader *R)
+{
+    Assert(R);
+
+    if (R->HasError)
+    {
+        return;
+    }
+
+    // NOTE: If there are unused whole bytes Pos must be rewind back so that
+    // they aren't skipped when reading uncompressed bytes
+    while (R->BitCount >= 8)
+    {
+        if (R->Pos > 0)
+        {
+            R->Pos--;
+            R->BitCount -= 8;
+        }
+        else
+        {
+            R->HasError = True;
+            return;
+        }
+    }
+
+    R->BitBuf = 0;
+    R->BitCount = 0;
+}
+
 //
 // NOTE: String utilities
 //

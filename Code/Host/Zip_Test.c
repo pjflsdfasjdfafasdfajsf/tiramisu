@@ -1,8 +1,6 @@
+#include "SDL.h"
 #include "Types.h"
 #include "Zip.h"
-
-#include <stdio.h>
-#include <stdlib.h>
 
 static const Uint8 Mem[] = {
 #embed "Archive.zip"
@@ -13,7 +11,7 @@ Int32 main()
     ZipArchive Zip = ZipOpen(Mem, sizeof(Mem));
     if (!Zip.IsValid)
     {
-        printf("ERROR: Invalid test data.\n");
+        LogCritical("Invalid test data.\n");
 
         return 1;
     }
@@ -23,25 +21,25 @@ Int32 main()
         ZipEntry Entry = ZipGetEntByIndex(&Zip, I);
         if (Entry.IsValid)
         {
-            printf("%u: %.*s (%u bytes)\n",
-                   I, (int)Entry.NameLen, (const char *)Entry.NamePtr, Entry.UncompressedSize);
+            SDL_Log("%u: %.*s (%u uncompressed bytes, %u compressed bytes)\n",
+                   I, (int)Entry.NameLen, (const char *)Entry.NamePtr, Entry.UncompressedSize, Entry.CompressedSize);
         }
     }
 
     ZipEntry Entry = ZipGetEntByName(&Zip, "Build/Test/Data/Archive/Hello.txt");
     if (Entry.IsValid)
     {
-        Uint8 *Buffer = malloc(Entry.UncompressedSize + 1);
+        Uint8 *Buffer = SDL_malloc(Entry.UncompressedSize + 1);
         if (Buffer)
         {
             if (ZipReadEnt(&Zip, &Entry, Buffer, Entry.UncompressedSize))
             {
                 Buffer[Entry.UncompressedSize] = '\0';
-                printf("%s", (char *)Buffer);
+                SDL_Log("%s", (char *)Buffer);
             }
             else
             {
-                printf("ERROR: Extraction failed.\n");
+                LogCritical("Extraction failed.\n");
                 return 1;
             }
         }
@@ -52,7 +50,7 @@ Int32 main()
     }
     else
     {
-        printf("ERROR: Invalid test data.\n");
+        LogCritical("Invalid test data.\n");
     }
 
     return 0;

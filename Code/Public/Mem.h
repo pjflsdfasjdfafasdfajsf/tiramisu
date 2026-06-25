@@ -45,6 +45,11 @@ Uint16 MemReaderReadU16LE(MemReader *R);
 Uint32 MemReaderReadU32LE(MemReader *R);
 const Uint8 *MemReaderReadBytes(MemReader *R, Usize Bytes);
 
+Void MemReaderRefillBits(MemReader *R, Uint32 Num);
+Uint32 MemReaderGetBits(MemReader *R, Uint32 Num);
+Uint32 MemReaderGetBitsBase(MemReader *R, Uint32 Num, Uint32 Base);
+Void MemReaderAlignToByteBoundary(MemReader *R);
+
 //
 // NOTE: String utilities
 //
@@ -62,7 +67,6 @@ Void MemNullTerminate(char *Buf, Usize Cap, Usize Len);
 Uint32 MemReadUint(const char **CurInit);
 
 Void MemAdvanceToNextLine(const char **CurInit, const char *End);
-
 
 //
 // NOTE: Misc

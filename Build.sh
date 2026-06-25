@@ -140,19 +140,20 @@ if [ ${ShouldTest} -eq 1 ]; then
 
     Uncompressed="${TestDataDir}/Archive"
     mkdir -p ${Uncompressed}
-    echo "Hi i love u <3" > ${Uncompressed}/Hello.txt
+    echo "Hi i love u <3 AAAAAAANBBBBBCBCCCBCBCABAAAABCBCBCBABA" > ${Uncompressed}/Hello.txt
     echo "Imagine this is a cool binary" > ${Uncompressed}/SomeAsset.bin
 
     Compressed="${Uncompressed}.zip"
     rm -f ${Compressed}
-    zip -0 -r ${Compressed} ${Uncompressed} >/dev/null
+    zip -9 -r ${Compressed} ${Uncompressed} >/dev/null
 
     ZipTestSrc="Code/Host/Zip_Test.c \
                 Code/Host/Zip.c      \
                "
     ZipTestTarget="${TestDir}/Zip"
     # TODO: Check for C23 support? Or perhaps just make AtlasPack more generic.
-    ZipTestFlags="${CommonCompilerFlags} -std=c23 --embed-dir=${TestDataDir}"
+    # TODO SDL3 thingy 
+    ZipTestFlags="${CommonCompilerFlags} -IExt/WAMR/Include -lSDL3 -std=c23 --embed-dir=${TestDataDir}"
 
     ${Compiler} ${ZipTestFlags} ${ZipTestSrc} ${SDKTarget} -o ${ZipTestTarget}
 
