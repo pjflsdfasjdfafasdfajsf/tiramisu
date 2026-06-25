@@ -103,11 +103,12 @@ printf "Done\n"
 #
 
 printf ${Align} "Host"
-HostSrc="Code/Host/Main.c    \
-         Code/Host/Runtime.c \
-         Code/Host/STB.c     \
-         Code/Host/SDL.c     \
-         Code/Host/Zip.c
+HostSrc="Code/Host/Main.c     \
+         Code/Host/Runtime.c  \
+         Code/Host/STB.c      \
+         Code/Host/SDL.c      \
+         Code/Host/Zip.c      \
+         Code/Host/KeyValue.c 
         "
 HostTarget="${BuildDir}/Game"
 HostFlags="${CommonCompilerFlags} -IExt/WAMR/Include -IExt/SDL3/Include -IExt/STB"
@@ -115,18 +116,21 @@ HostFlags="${CommonCompilerFlags} -IExt/WAMR/Include -IExt/SDL3/Include -IExt/ST
 ${Compiler} ${HostFlags} ${HostSrc} ${SDKTarget} ${LinkerFlags} -o ${HostTarget}
 printf "Done\n"
 
+
 #
 # NOTE: Game
 #
 
 printf ${Align} "Game"
 GameSrc="Code/Game/Game.c"
+GameManifest="Code/Game/Manifest.txt"
 GameUncompressedTarget="${BuildDir}/Game.wasm"
 GameCompressedTarget="${BuildDir}/Game.zip"
 GameFlags="${CommonCompilerFlags} --target=wasm32 -nostdlib -Wl,--no-entry -Wl,--export-all -Wl,--allow-undefined"
 
 ${Compiler} ${GameFlags} ${GameSrc} -Wl,--whole-archive ${SDKWasmTarget} -Wl,--no-whole-archive -o ${GameUncompressedTarget}
-${Zip} -9 -r ${GameCompressedTarget} ${GameUncompressedTarget} >/dev/null
+
+${Zip} -9 ${GameCompressedTarget} ${GameUncompressedTarget} ${GameManifest} >/dev/null
 
 rm -f ${GameUncompressedTarget}
 

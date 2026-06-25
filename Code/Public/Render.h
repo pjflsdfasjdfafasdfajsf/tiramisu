@@ -13,7 +13,6 @@ StaticAssert(IsPow2(BUF_ALIGN));
 // NOTE:
 // 1. All positions are in pixels, with origin for everyone being the top-left.
 // 2. Intenally renderer uses letterboxing with the resolution of 1280x720
-// TODO: Probably will have more to say later
 
 typedef Uint32 TexHandle;
 #define TexHandleInvalid 0xFFFFFFFF

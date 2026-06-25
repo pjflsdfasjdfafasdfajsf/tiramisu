@@ -248,11 +248,7 @@ static inline Bool DecodeTrees(MemReader *R, DeflateTree *Lt, DeflateTree *Dt, B
         return False;
     }
 
-    Uint8 Lengths[DeflateNumLiteralSymbols + DeflateNumDistanceSymbols];
-    for (Uint32 I = 0; I < DeflateNumLiteralSymbols + DeflateNumDistanceSymbols; ++I)
-    {
-        Lengths[I] = 0;
-    }
+    Uint8 Lengths[DeflateNumLiteralSymbols + DeflateNumDistanceSymbols] = {0};
 
     static const Uint8 ClcIndex[DeflateNumCodeLengthSymbols] = {
         16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
@@ -272,11 +268,7 @@ static inline Bool DecodeTrees(MemReader *R, DeflateTree *Lt, DeflateTree *Dt, B
         return False;
     }
 
-    Uint8 CodeLengths[DeflateNumCodeLengthSymbols];
-    for (Uint32 I = 0; I < DeflateNumCodeLengthSymbols; ++I)
-    {
-        CodeLengths[I] = 0;
-    }
+    Uint8 CodeLengths[DeflateNumCodeLengthSymbols] = {0};
 
     for (Uint32 I = 0; I < Hclen; ++I)
     {
@@ -635,31 +627,39 @@ static inline Bool DecompressDeflate(Uint8 *Buf, Usize BufSize, const Uint8 *Pay
 // NOTE: Internal
 //
 
+
 static inline Bool NameMatches(const Uint8 *NamePtr, Uint16 NameLen, const char *File)
 {
     Assert(NamePtr);
     Assert(File);
 
-    Usize TargetLen = 0;
-    while (File[TargetLen] != '\0')
-    {
-        TargetLen++;
-    }
-
-    if (TargetLen != NameLen)
+    Usize TargetLen = CStrLen(File);
+    if (NameLen < TargetLen)
     {
         return False;
     }
 
-    for (Uint16 I = 0; I < NameLen; I++)
+    const Uint8 *StartPtr = NamePtr + NameLen - TargetLen;
+    for (Usize I = 0; I < TargetLen; ++I)
     {
-        if (NamePtr[I] != (Uint8)File[I])
+        if (StartPtr[I] != (Uint8)File[I])
         {
             return False;
         }
     }
 
-    return True;
+    if (NameLen == TargetLen)
+    {
+        return True;
+    }
+
+    Uint8 PrevChar = *(StartPtr - 1);
+    if (PrevChar == '/' || PrevChar == '\\')
+    {
+        return True;
+    }
+
+    return False;
 }
 
 static inline Bool FindEOCD(const Uint8 *Mem, Usize Size, Usize *OutEOCD)

@@ -63,8 +63,8 @@ Uint32 CStrLen(const char *CStr);
 Void MemCopy(Void *DestInit, const Void *SrcInit, Usize Size);
 Void MemNullTerminate(char *Buf, Usize Cap, Usize Len);
 
-// TODO: Remove this (Atlas thingy needs to migrate to MemReader)
-Uint32 MemReadUint(const char **CurInit);
+const char *MemFindChar(const char *Start, const char *End, char Target);
+Uint32 MemParseUint(const char **CurInit);
 
 Void MemAdvanceToNextLine(const char **CurInit, const char *End);
 

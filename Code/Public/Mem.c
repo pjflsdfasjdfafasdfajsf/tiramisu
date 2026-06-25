@@ -322,7 +322,22 @@ Void MemNullTerminate(char *Buf, Usize Cap, Usize Len)
     }
 }
 
-Uint32 MemReadUint(const char **CurInit)
+const char *MemFindChar(const char *Start, const char *End, char Target)
+{
+    Assert(Start);
+    Assert(End >= Start);
+
+    for (const char *Scan = Start; Scan < End; ++Scan)
+    {
+        if (*Scan == Target)
+        {
+            return Scan;
+        }
+    }
+    return 0;
+}
+
+Uint32 MemParseUint(const char **CurInit)
 {
     Uint32 Result = 0;
 

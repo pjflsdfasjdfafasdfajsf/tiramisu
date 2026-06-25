@@ -1,4 +1,5 @@
 #include "SDL.h"
+#include "KeyValue.h"
 #include "Render.h"
 #include "STB.h"
 #include "wasm_export.h"
@@ -225,6 +226,84 @@ static inline Bool GetAbsPath(char *Buf, Usize Size, const char *Name)
     return True;
 }
 
+static Bool ReadManifest(ZipArchive *Archive, const char *Path)
+{
+    Assert(Archive);
+    Assert(Path);
+
+    ZipEntry Manifest = ZipGetEntByName(Archive, "Manifest.txt");
+    if (!Manifest.IsValid)
+    {
+        LogCritical("%s is missing Manifest.txt.\n", Path);
+        return False;
+    }
+
+    char *Buf = (char *)SDL_malloc(Manifest.UncompressedSize);
+    if (!Buf)
+    {
+        LogCritical("Failed to allocate memory for manifest buffer.\n");
+        return False;
+    }
+
+    if (!ZipReadEnt(Archive, &Manifest, (Uint8 *)Buf, Manifest.UncompressedSize))
+    {
+        LogCritical("Failed to read Manifest.txt from archive.\n");
+        return False;
+    }
+
+    Uint8 Mem[1024];
+    MemAlloc Alloc = MemAllocInit(Mem, sizeof(Mem));
+
+    KeyValueList List = KeyValueParse(&Alloc, Buf, Manifest.UncompressedSize);
+    if (List.HasError)
+    {
+        LogCritical("Failed to parse Manifest.txt in %s.\n", Path);
+        return False;
+    }
+
+#define ReqField(Field)                                                                       \
+    KeyValuePair Field##Pair = KeyValueListFind(List, #Field, sizeof(#Field) - 1);            \
+    if (Field##Pair.KeyLen == 0)                                                              \
+    {                                                                                         \
+        LogCritical("Invalid manifest in %s. Missing required field: '%s'.\n", Path, #Field); \
+        return False;                                                                         \
+    }
+
+#define OptField(Field) \
+    KeyValuePair Field##Pair = KeyValueListFind(List, #Field, sizeof(#Field) - 1);
+
+    ReqField(Name);
+    ReqField(Version);
+
+    OptField(Author);
+    OptField(Summary);
+
+#undef ReqField
+#undef OptField
+
+    if (AuthorPair.KeyLen > 0)
+    {
+        SDL_Log("%s: %.*s %.*s by %.*s\n", Path,
+                (Int32)NamePair.ValueLen, NamePair.Value,
+                (Int32)VersionPair.ValueLen, VersionPair.Value,
+                (Int32)AuthorPair.ValueLen, AuthorPair.Value);
+    }
+    else
+    {
+        SDL_Log("%s: %.*s %.*s\n", Path,
+                (Int32)NamePair.ValueLen, NamePair.Value,
+                (Int32)VersionPair.ValueLen, VersionPair.Value);
+    }
+
+    if (SummaryPair.KeyLen > 0)
+    {
+        SDL_Log("%.*s\n", (Int32)SummaryPair.ValueLen, SummaryPair.Value);
+    }
+
+    SDL_free(Buf);
+    return True;
+}
+
 static Bool LoadOneMod(Mod *Mod, const char *ZipPath)
 {
     Assert(Mod);
@@ -253,6 +332,12 @@ static Bool LoadOneMod(Mod *Mod, const char *ZipPath)
     if (!Mod->Archive.IsValid)
     {
         LogCritical("Failed to parse ZIP archive: %s\n", ZipPath);
+        return False;
+    }
+
+    if (!ReadManifest(&Mod->Archive, ZipPath))
+    {
+        LogCritical("Failed to read manifest.\n");
         return False;
     }
 
@@ -289,7 +374,6 @@ static Bool LoadOneMod(Mod *Mod, const char *ZipPath)
 
     char PathBuf[1024];
     Usize PathLen = SDL_strlen(ZipPath);
-    // TODO: Recurse into directories
     if (PathLen > 4 && SDL_strcmp(ZipPath + PathLen - 4, ".zip") == 0)
     {
         SDL_memcpy(PathBuf, ZipPath, PathLen - 4);
@@ -299,7 +383,7 @@ static Bool LoadOneMod(Mod *Mod, const char *ZipPath)
     {
         SDL_snprintf(PathBuf, sizeof(PathBuf), "%s", ZipPath);
     }
-    SDL_strlcat(PathBuf, "_extracted.wasm", sizeof(PathBuf));
+    SDL_strlcat(PathBuf, "_Extracted.wasm", sizeof(PathBuf));
 
     if (!SDL_SaveFile(PathBuf, WasmBuf, Wasm.UncompressedSize))
     {
@@ -345,7 +429,6 @@ static SDL_EnumerationResult SDLCALL EnumerateDirectoryCallback(Void *UserData, 
             if (Mod->ExtraMem)
             {
                 App->ModCount++;
-                SDL_Log("Loaded: %s\n", Mod->Path);
             }
             else
             {
