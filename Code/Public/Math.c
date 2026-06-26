@@ -20,3 +20,10 @@ Rect RectMake(Float32 X, Float32 Y, Float32 W, Float32 H)
 {
     return (Rect){V2Make(X, Y), V2Make(W, H)};
 }
+
+Bool RectContainsV2(Rect Rect, V2 Point)
+{
+    Bool Result = (Point.X >= Rect.Pos.X && Point.X < Rect.Pos.X + Rect.Size.W &&
+                   Point.Y >= Rect.Pos.Y && Point.Y < Rect.Pos.Y + Rect.Size.H);
+    return Result;
+}

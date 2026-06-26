@@ -49,6 +49,7 @@ typedef struct
 } Rect;
 
 Rect RectMake(Float32 X, Float32 Y, Float32 W, Float32 H);
+Bool RectContainsV2(Rect Rect, V2 Point);
 
 #define RectZero RectMake(0.0f, 0.0f, 0.0f, 0.0f)
 
