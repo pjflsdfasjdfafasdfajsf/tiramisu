@@ -4,6 +4,7 @@
 #include "Render.h"
 #include "Runtime.h"
 #include "STB.h"
+#include <SDL3/SDL_video.h>
 
 #define GameZip "Game.zip"
 
@@ -649,13 +650,13 @@ SDL Init()
         LogCritical("%s", SDL_GetError());
         Assert(0);
     }
-    if (!SDL_CreateWindowAndRenderer("Game", InternalWidth, InternalHeight, 0, &Result.Window, &Result.Renderer))
+    if (!SDL_CreateWindowAndRenderer("Game", InternalRes.W, InternalRes.H, SDL_WINDOW_RESIZABLE, &Result.Window, &Result.Renderer))
     {
         LogCritical("%s", SDL_GetError());
         Assert(0);
     }
 
-    if (!SDL_SetRenderLogicalPresentation(Result.Renderer, InternalWidth, InternalHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX))
+    if (!SDL_SetRenderLogicalPresentation(Result.Renderer, InternalRes.W, InternalRes.H, SDL_LOGICAL_PRESENTATION_LETTERBOX))
     {
         LogCritical("%s", SDL_GetError());
         Assert(0);

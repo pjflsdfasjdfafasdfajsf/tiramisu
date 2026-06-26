@@ -10,8 +10,8 @@ StaticAssert(IsPow2(BufAlign));
 
 #define BufAlignUp(Value) AlignUp(Value, BufAlign)
 
-#define InternalWidth 1280.0f
-#define InternalHeight 720.0f
+#define InternalRes V2Make(1280.0f, 720.0f)
+#define ScreenCenter V2Unscale(InternalRes, 2.0f)
 
 // NOTE:
 // 1. All positions are in pixels, with origin for everyone being the top-left.
