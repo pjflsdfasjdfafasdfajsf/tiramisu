@@ -485,7 +485,16 @@ Void Render(SDL *App)
                 Assert(0);
             }
 
-            if (!SDL_RenderDebugText(App->Renderer, DrawDebugText->Pos.X, DrawDebugText->Pos.Y, DrawDebugText->Str))
+            float TargetX = DrawDebugText->Pos.X / DrawDebugText->Scale.X;
+            float TargetY = DrawDebugText->Pos.Y / DrawDebugText->Scale.Y;
+
+            if (!SDL_RenderDebugText(App->Renderer, TargetX, TargetY, DrawDebugText->Str))
+            {
+                LogCritical("%s", SDL_GetError());
+                Assert(0);
+            }
+
+            if (!SDL_SetRenderScale(App->Renderer, 1.0f, 1.0f))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
@@ -642,13 +651,13 @@ SDL Init()
         LogCritical("%s", SDL_GetError());
         Assert(0);
     }
-    if (!SDL_CreateWindowAndRenderer("Game", 1280, 720, 0, &Result.Window, &Result.Renderer))
+    if (!SDL_CreateWindowAndRenderer("Game", InternalWidth, InternalHeight, 0, &Result.Window, &Result.Renderer))
     {
         LogCritical("%s", SDL_GetError());
         Assert(0);
     }
 
-    if (!SDL_SetRenderLogicalPresentation(Result.Renderer, 1280, 720, SDL_LOGICAL_PRESENTATION_LETTERBOX))
+    if (!SDL_SetRenderLogicalPresentation(Result.Renderer, InternalWidth, InternalHeight, SDL_LOGICAL_PRESENTATION_LETTERBOX))
     {
         LogCritical("%s", SDL_GetError());
         Assert(0);

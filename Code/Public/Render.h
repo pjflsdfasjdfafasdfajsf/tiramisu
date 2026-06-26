@@ -1,14 +1,17 @@
 #if !defined(RENDER_H)
 #define RENDER_H
 
-#include "Mem.h"
 #include "Math.h"
+#include "Mem.h"
 #include "Types.h"
 
 #define BufAlign 4
 StaticAssert(IsPow2(BufAlign));
 
 #define BufAlignUp(Value) AlignUp(Value, BufAlign)
+
+#define InternalWidth 1280.0f
+#define InternalHeight 720.0f
 
 // NOTE:
 // 1. All positions are in pixels, with origin for everyone being the top-left.
@@ -41,6 +44,8 @@ typedef struct
     Color Color;
 } RenderClear;
 
+// NOTE: Character size for the debug font.
+#define DebugTextCharSize 8
 // NOTE: There's a reason why this command is called 'draw DEBUG' text and
 // that reason is that the implementation of it just uses SDL built-in
 // SDL_RenderDebugText function, which provides just simple bitmap

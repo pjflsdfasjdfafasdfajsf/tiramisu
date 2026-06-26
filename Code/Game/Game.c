@@ -24,7 +24,7 @@ UpdateAndRender(UpdateAndRender)
     }
 
     RenderBufClear(RenderBuf, Black);
-    RenderBufDrawCStr(RenderBuf, White, V2Make(10.0f, 10.0f), V2Make(2.0f, 2.0f), "Hello, World!\n");
+    RenderBufDrawCStr(RenderBuf, White, V2Make(InternalWidth / 2.0f, InternalHeight / 2.0f), V2Make(2.0f, 2.0f), "Hello, World!\n");
 
     Rect ExcitedMan = AtlasGetRect(&State->SpriteAtlas, "ExcitedMan.png");
     RenderBufDrawRect(RenderBuf, State->SpriteAtlasTex, RectMake(100.0f, 100.0f, 100.0f, 100.0f), ExcitedMan, White);
