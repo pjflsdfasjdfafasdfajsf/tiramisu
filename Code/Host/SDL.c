@@ -2,9 +2,9 @@
 #include "KeyValue.h"
 #include "Math.h"
 #include "Render.h"
-#include "State.h"
 #include "Runtime.h"
 #include "STB.h"
+#include "State.h"
 
 #define GameZip "Game.zip"
 
@@ -784,9 +784,12 @@ static inline Action *GetMouseAction(SDL *App, Uint8 Code)
 {
     switch (Code)
     {
-    case SDL_BUTTON_LEFT: return App->Keys[MouseButtonLeft];
-    case SDL_BUTTON_RIGHT: return App->Keys[MouseButtonRight];
-    case SDL_BUTTON_MIDDLE: return App->Keys[MouseButtonMiddle];
+    case SDL_BUTTON_LEFT:
+        return App->Keys[MouseButtonLeft];
+    case SDL_BUTTON_RIGHT:
+        return App->Keys[MouseButtonRight];
+    case SDL_BUTTON_MIDDLE:
+        return App->Keys[MouseButtonMiddle];
     }
 
     return 0;
@@ -816,7 +819,7 @@ Bool Poll(SDL *App)
             return False;
         }
         break;
-        
+
         case SDL_EVENT_MOUSE_MOTION:
         {
             SDL_ConvertEventToRenderCoordinates(App->Renderer, &Ev);
@@ -827,7 +830,6 @@ Bool Poll(SDL *App)
 
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
         {
-            SDL_ConvertEventToRenderCoordinates(App->Renderer, &Ev);
             Action *Action = GetMouseAction(App, Ev.button.button);
 
             if (Action)
@@ -840,13 +842,12 @@ Bool Poll(SDL *App)
 
         case SDL_EVENT_MOUSE_BUTTON_UP:
         {
-            SDL_ConvertEventToRenderCoordinates(App->Renderer, &Ev);
             Action *Action = GetMouseAction(App, Ev.button.button);
 
             if (Action)
             {
                 Action->IsDown = False;
-                Action->Released= True;
+                Action->Released = True;
             }
         }
         break;
@@ -864,7 +865,8 @@ Bool Poll(SDL *App)
                     Action->Pressed = True;
                 }
             }
-        } break;
+        }
+        break;
 
         case SDL_EVENT_KEY_UP:
         {
@@ -876,10 +878,11 @@ Bool Poll(SDL *App)
                 if (Action)
                 {
                     Action->IsDown = False;
-                    Action->Released= True;
+                    Action->Released = True;
                 }
             }
-        } break;
+        }
+        break;
 
         default:
         {

@@ -12,9 +12,9 @@
 
 enum
 {
-    TileEmpty,  
+    TileEmpty,
     TileSolid,
-    TileHook,  
+    TileHook,
 };
 
 static inline Map MapInitialize(Void)
@@ -32,14 +32,15 @@ static inline Map MapInitialize(Void)
             {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
         },
     };
-    
+
     return Result;
 }
 
 static inline Void MapDraw(Map *Map, RenderBuf *RenderBuf)
 {
-    Assert(Map); Assert(RenderBuf);
-    
+    Assert(Map);
+    Assert(RenderBuf);
+
     for (Int32 Y = 0; Y < MapHeight; Y++)
     {
         for (Int32 X = 0; X < MapWidth; X++)
@@ -59,8 +60,9 @@ static inline Void MapDraw(Map *Map, RenderBuf *RenderBuf)
             {
             case TileSolid:
             {
-                color = White;   
-            } break;
+                color = White;
+            }
+            break;
             }
 
             RenderBufDrawRect(RenderBuf, TexHandleInvalid, Rect, Rect, color);
@@ -115,7 +117,7 @@ static Void MapMoveAndCollide(State *State, V2 *Pos, V2 Size, V2 Move)
 {
     Assert(State);
     Assert(Pos);
-    
+
     Float32 PosBeforeMovingX = Pos->X;
     Pos->X += Move.X;
     if (MapIsOverlappingSolidTile(State, RectGetCentered(*Pos, Size)))
@@ -141,7 +143,7 @@ static Void MapMoveAndCollide(State *State, V2 *Pos, V2 Size, V2 Move)
 
         while (!MapIsOverlappingSolidTile(State, RectGetCentered(V2Make(Pos->X, Pos->Y + Dir), Size)))
         {
-            Pos->Y = Dir;
+            Pos->Y += Dir;
         }
     }
 }
@@ -202,8 +204,6 @@ static Bool MapFindNearestHookWithinRadius(State *State, V2 Origin, Float32 Radi
 #define PlayerJumpBufferDuration 0.15f
 #define PlayerHookCooldown 0.25f
 
-
-
 static inline Player PlayerInitialize(Void)
 {
     Player Result = {0};
@@ -218,18 +218,18 @@ static Bool PlayerOnGround(State *State)
     Rect Feet = RectGetCentered(State->Player.Pos, PlayerSize);
     Feet.Pos.Y += 1.0f;
 
-    return MapIsOverlappingSolidTile(State, Feet); 
+    return MapIsOverlappingSolidTile(State, Feet);
 }
 
 static inline Void PlayerUpdateSwing(State *State)
 {
     Assert(State);
- 
+
     Player *Player = &State->Player;
 
     Float32 Distance = V2Dist(Player->Pos, Player->HookTarget);
     V2 Offset = V2Sub(Player->Pos, Player->HookTarget);
-    
+
     Bool CloserThanRope = Distance <= Player->HookRopeLength || Distance == 0.0f;
     if (CloserThanRope)
     {
@@ -271,7 +271,7 @@ static inline Void PlayerUpdate(State *State)
     {
         if (Player->DashTimer > 0.0f)
         {
-            Player->DashTimer -=  State->Time.Delta;
+            Player->DashTimer -= State->Time.Delta;
         }
 
         Float32 HorizontalInput = (Float32)State->Input.Right.IsDown - (Float32)State->Input.Left.IsDown;
@@ -348,7 +348,8 @@ static inline Void PlayerUpdate(State *State)
 
         // NOTE: Gravity
         Player->Vel.Y += PlayerGravity * State->Time.Delta;
-    } break;
+    }
+    break;
     case PlayerState_Dash:
     {
         Player->Vel.X = Player->DashDirection * PlayerDashSpeed;
@@ -364,7 +365,8 @@ static inline Void PlayerUpdate(State *State)
 
             Player->DashTimer = PlayerDashCooldown;
         }
-    } break;
+    }
+    break;
     case PlayerState_Slam:
     {
         Player->Vel.Y = PlayerSlamSpeed;
@@ -373,7 +375,8 @@ static inline Void PlayerUpdate(State *State)
         {
             Player->State = PlayerState_Normal;
         }
-    } break;
+    }
+    break;
     case PlayerState_Hook:
     {
         if (!State->Input.Hook.IsDown)
@@ -408,7 +411,8 @@ static inline Void PlayerUpdate(State *State)
         }
 
         Player->Vel.Y += PlayerGravity * State->Time.Delta;
-    } break;
+    }
+    break;
     }
 
     // NOTE: Physics and Collisions
@@ -426,7 +430,6 @@ static inline Void PlayerUpdate(State *State)
     {
         PlayerUpdateSwing(State);
     }
-    
 }
 
 static void PlayerDraw(State *State, RenderBuf *RenderBuf)

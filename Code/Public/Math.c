@@ -61,7 +61,7 @@ V2 V2Norm(V2 X)
     Float32 Len = V2Len(X);
     if (Len < EPSILON)
     {
-        return V2Zero;    
+        return V2Zero;
     }
     return V2Unscale(X, Len);
 }
@@ -112,7 +112,6 @@ V2I V2IUnscale(V2I X, Int32 Y)
     return V2IMake(X.X / Y, X.Y / Y);
 }
 
-
 //
 // NOTE: Rect
 //
@@ -140,7 +139,7 @@ Bool RectContainsRect(Rect X, Rect Y)
     V2 TopRight = V2Make(Y.Pos.X + Y.Size.W, Y.Pos.Y);
     V2 BottomLeft = V2Make(Y.Pos.X, Y.Pos.Y + Y.Size.H);
     V2 BottomRight = V2Add(Y.Pos, Y.Size);
-    
+
     return RectContainsV2(X, TopLeft) || RectContainsV2(X, TopRight) || RectContainsV2(X, BottomLeft) || RectContainsV2(X, BottomRight);
 }
 
