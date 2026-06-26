@@ -75,7 +75,7 @@ Bool UIButton(RenderBuf *RenderBuf, UIContext *UI, Input *Input, Rect Bounds, co
 
     if (UI->Active == ID)
     {
-        if (!Input->MouseDown)
+        if (!Input->LMB.IsDown)
         {
             if (UI->Hot == ID)
             {
@@ -84,7 +84,7 @@ Bool UIButton(RenderBuf *RenderBuf, UIContext *UI, Input *Input, Rect Bounds, co
             UI->Active = 0;
         }
     }
-    else if (UI->Hot == ID && Input->MouseClicked)
+    else if (UI->Hot == ID && Input->LMB.Pressed)
     {
         UI->Active = ID;
     }

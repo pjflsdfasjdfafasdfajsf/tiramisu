@@ -16,61 +16,6 @@
 #define Import(Name)
 #endif
 
-// TODO: temporary
-#define MapHeight 9
-#define MapWidth 30
-
-typedef struct Map
-{
-    Int32 Grid[MapHeight][MapWidth];
-} Map;
-
-typedef enum PlayerState
-{
-    PlayerState_Normal,
-    PlayerState_Dash,
-    PlayerState_Slam,
-    PlayerState_Hook,    
-} PlayerState;
-
-typedef struct Player
-{
-    V2 Pos;
-    V2 Vel;
-    PlayerState State;
-} Player;
-
-typedef struct Action
-{
-    Bool IsDown;
-    Bool Pressed;
-    Bool Released;
-} Action;
-
-typedef struct Input
-{
-    Action Jump;
-    Action Dash;
-    Action Slam;
-    Action Hook;
-    Action Left;
-    Action Right;
-} Input;
-
-typedef struct State
-{
-    MemAlloc PermanentAlloc;
-
-    TexHandle SpriteAtlasTex;
-    Atlas SpriteAtlas;
-
-    Input Input;
-
-    Map Map;
-    Player Player;
-
-    Bool IsInitialized;
-} State;
 #define ExtraMemSize Mb(2)
 
 // NOTE: `State` is the game state and `ExtraMem` is memory for allocating your own state struct if you need it.
