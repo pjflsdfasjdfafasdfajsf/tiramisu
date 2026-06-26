@@ -4,10 +4,10 @@
 //     # This is a comment.
 //     Key = Value
 //
-#include "Mem.h"
 #if !defined(KEY_VALUE_H)
 #define KEY_VALUE_H
 
+#include "Mem.h"
 #include "Types.h"
 
 typedef struct
