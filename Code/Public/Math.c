@@ -1,6 +1,8 @@
 #include "Math.h"
 #include "Types.h"
 
+#define EPSILON 1.19209289e-7
+
 //
 // NOTE: Color
 //
@@ -39,6 +41,41 @@ V2 V2Sub(V2 X, V2 Y)
     return V2Make(X.X - Y.X, X.Y - Y.Y);
 }
 
+Float32 V2Dot(V2 X, V2 Y)
+{
+    return X.X * Y.X + X.Y * Y.Y;
+}
+
+Float32 V2LenSquared(V2 X)
+{
+    return X.X * X.X + X.Y * X.Y;
+}
+
+Float32 V2Len(V2 X)
+{
+    return Sqrt(X.X * X.X + X.Y * X.Y);
+}
+
+V2 V2Norm(V2 X)
+{
+    Float32 Len = V2Len(X);
+    if (Len < EPSILON)
+    {
+        return V2Zero;
+    }
+    return V2Unscale(X, Len);
+}
+
+Float32 V2DistSquared(V2 X, V2 Y)
+{
+    return V2LenSquared(V2Sub(X, Y));
+}
+
+Float32 V2Dist(V2 X, V2 Y)
+{
+    return Sqrt(V2DistSquared(X, Y));
+}
+
 // NOTE: Scalar ops.
 
 V2 V2Scale(V2 X, Float32 Y)
@@ -49,6 +86,30 @@ V2 V2Scale(V2 X, Float32 Y)
 V2 V2Unscale(V2 X, Float32 Y)
 {
     return V2Make(X.X / Y, X.Y / Y);
+}
+
+// NOTE: V2I
+
+V2I V2IMake(Int32 X, Int32 Y)
+{
+    return (V2I){{{X, Y}}};
+}
+
+V2I V2IFromV2(V2 X)
+{
+    return V2IMake((Int32)X.X, (Int32)X.Y);
+}
+
+// NOTE: Scalar ops.
+
+V2I V2IScale(V2I X, Int32 Y)
+{
+    return V2IMake(X.X * Y, X.Y * Y);
+}
+
+V2I V2IUnscale(V2I X, Int32 Y)
+{
+    return V2IMake(X.X / Y, X.Y / Y);
 }
 
 //
@@ -72,10 +133,25 @@ Bool RectContainsV2(Rect Rect, V2 Point)
     return Result;
 }
 
+Bool RectContainsRect(Rect X, Rect Y)
+{
+    V2 TopLeft = Y.Pos;
+    V2 TopRight = V2Make(Y.Pos.X + Y.Size.W, Y.Pos.Y);
+    V2 BottomLeft = V2Make(Y.Pos.X, Y.Pos.Y + Y.Size.H);
+    V2 BottomRight = V2Add(Y.Pos, Y.Size);
+
+    return RectContainsV2(X, TopLeft) || RectContainsV2(X, TopRight) || RectContainsV2(X, BottomLeft) || RectContainsV2(X, BottomRight);
+}
+
 V2 RectGetCenteredPos(Rect R, V2 Size)
 {
     V2 Rect = V2Make(R.Size.W, R.Size.H);
     return V2Add(R.Pos, V2Scale(V2Sub(Rect, Size), 0.5f));
+}
+
+Rect RectGetCentered(V2 Pos, V2 Size)
+{
+    return RectMake2(V2Make(Pos.X - (Size.W * 0.5f), Pos.Y - (Size.H * 0.5f)), Size);
 }
 
 //
@@ -106,4 +182,17 @@ Uint32 HashCombine(Uint32 Parent, Uint32 Child)
     Result *= HashPrime;
 
     return Result;
+}
+
+// NOTE: Generic Math
+Float32 Approach(Float32 Current, Float32 Target, Float32 MaximumDelta)
+{
+    if (Current < Target)
+    {
+        return Min(Current + MaximumDelta, Target);
+    }
+    else
+    {
+        return Max(Current - MaximumDelta, Target);
+    }
 }

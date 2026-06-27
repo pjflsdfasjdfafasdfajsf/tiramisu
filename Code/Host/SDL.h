@@ -6,6 +6,14 @@
 #include "Zip.h"
 #include "Runtime.h"
 
+enum
+{
+    MouseButtonLeft = SDL_SCANCODE_COUNT + 0,  
+    MouseButtonRight = SDL_SCANCODE_COUNT + 1,  
+    MouseButtonMiddle = SDL_SCANCODE_COUNT + 2,
+    KeysCount = SDL_SCANCODE_COUNT + 3,
+};
+
 typedef struct
 {
     Runtime Rt;
@@ -44,6 +52,7 @@ typedef struct
     SDL_Texture *Texs[512];
     Uint32 TexCount;
 
+    Action *Keys[KeysCount];
     State State;
 } SDL;
 

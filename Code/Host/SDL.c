@@ -4,6 +4,7 @@
 #include "Render.h"
 #include "Runtime.h"
 #include "STB.h"
+#include "State.h"
 
 #define GameZip "Game.zip"
 
@@ -193,6 +194,23 @@ static Uint32 HostReadFile(wasm_exec_env_t ExecEnv, Uint32 PathPtrOffset, Uint32
 // NOTE: Internal
 //
 
+static inline Float32 GetDeltaSeconds()
+{
+    static Uint64 LastFrameTicks = 0;
+    static Bool IsInitialized = True;
+
+    if (IsInitialized)
+    {
+        IsInitialized = False;
+        LastFrameTicks = SDL_GetTicks();
+    }
+
+    Uint64 ThisFrameTicks = SDL_GetTicks();
+    Float32 DeltaSeconds = (ThisFrameTicks - LastFrameTicks) / 1000.0f;
+    LastFrameTicks = ThisFrameTicks;
+
+    return DeltaSeconds;
+}
 static inline Int64 GetFileModTime(const char *Path)
 {
     SDL_PathInfo Info;
@@ -587,6 +605,8 @@ Void Update(SDL *App)
 {
     Assert(App);
 
+    App->State.Time.Delta = GetDeltaSeconds();
+
     for (Uint32 I = 0; I < App->ModCount; ++I)
     {
         Mod *Mod = &App->Mods[I];
@@ -640,6 +660,23 @@ Void Update(SDL *App)
     }
 }
 
+static inline Void ApplyInputBindings(SDL *App)
+{
+    /* TODO: later read them from a input file. Right now they are hardcoded */
+    Input *Input = &App->State.Input;
+
+    App->Keys[SDL_SCANCODE_D] = &Input->Right;
+    App->Keys[SDL_SCANCODE_A] = &Input->Left;
+    App->Keys[SDL_SCANCODE_SPACE] = &Input->Jump;
+    App->Keys[SDL_SCANCODE_LSHIFT] = &Input->Dash;
+    App->Keys[SDL_SCANCODE_E] = &Input->Hook;
+    App->Keys[SDL_SCANCODE_S] = &Input->Slam;
+
+    App->Keys[MouseButtonLeft] = &Input->LMB;
+    App->Keys[MouseButtonRight] = &Input->RMB;
+    App->Keys[MouseButtonMiddle] = &Input->MMB;
+}
+
 SDL Init()
 {
     SDL Result = {0};
@@ -660,6 +697,8 @@ SDL Init()
         LogCritical("%s", SDL_GetError());
         Assert(0);
     }
+
+    ApplyInputBindings(&Result);
 
     Void *Mem = SDL_malloc(Kb(64));
     if (!Mem)
@@ -741,11 +780,34 @@ SDL Init()
     return Result;
 }
 
+static inline Action *GetMouseAction(SDL *App, Uint8 Code)
+{
+    switch (Code)
+    {
+    case SDL_BUTTON_LEFT:
+        return App->Keys[MouseButtonLeft];
+    case SDL_BUTTON_RIGHT:
+        return App->Keys[MouseButtonRight];
+    case SDL_BUTTON_MIDDLE:
+        return App->Keys[MouseButtonMiddle];
+    }
+
+    return 0;
+}
+
 Bool Poll(SDL *App)
 {
     Assert(App);
 
-    App->State.Input.MouseClicked = False;
+    for (Usize I = 0; I < KeysCount; I++)
+    {
+        Action *Action = App->Keys[I];
+
+        if (Action)
+        {
+            Action->Pressed = False;
+        }
+    }
 
     SDL_Event Ev;
     while (SDL_PollEvent(&Ev))
@@ -768,21 +830,56 @@ Bool Poll(SDL *App)
 
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
         {
-            SDL_ConvertEventToRenderCoordinates(App->Renderer, &Ev);
-            if (Ev.button.button == SDL_BUTTON_LEFT)
+            Action *Action = GetMouseAction(App, Ev.button.button);
+
+            if (Action)
             {
-                App->State.Input.MouseDown = True;
-                App->State.Input.MouseClicked = True;
+                Action->IsDown = True;
+                Action->Pressed = True;
             }
         }
         break;
 
         case SDL_EVENT_MOUSE_BUTTON_UP:
         {
-            SDL_ConvertEventToRenderCoordinates(App->Renderer, &Ev);
-            if (Ev.button.button == SDL_BUTTON_LEFT)
+            Action *Action = GetMouseAction(App, Ev.button.button);
+
+            if (Action)
             {
-                App->State.Input.MouseDown = False;
+                Action->IsDown = False;
+                Action->Released = True;
+            }
+        }
+        break;
+
+        case SDL_EVENT_KEY_DOWN:
+        {
+            SDL_Scancode Scancode = Ev.key.scancode;
+            if (Scancode > 0 && Scancode < SDL_SCANCODE_COUNT)
+            {
+                Action *Action = App->Keys[Scancode];
+
+                if (Action)
+                {
+                    Action->IsDown = True;
+                    Action->Pressed = True;
+                }
+            }
+        }
+        break;
+
+        case SDL_EVENT_KEY_UP:
+        {
+            SDL_Scancode Scancode = Ev.key.scancode;
+            if (Scancode > 0 && Scancode < SDL_SCANCODE_COUNT)
+            {
+                Action *Action = App->Keys[Scancode];
+
+                if (Action)
+                {
+                    Action->IsDown = False;
+                    Action->Released = True;
+                }
             }
         }
         break;

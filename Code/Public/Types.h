@@ -87,6 +87,9 @@ typedef size_t Usize;
 
 #define Min(A, B) ((A) < (B) ? (A) : (B))
 #define Max(A, B) ((A) > (B) ? (A) : (B))
+#define Abs(A) ((A) < 0.0f ? -(A) : (A))
 #define Clamp(MinVal, Val, MaxVal) Max(MinVal, Min(Val, MaxVal))
+#define CopySign(Magnitude, Sign) __builtin_copysignf((Magnitude), (Sign))
+#define Sqrt(A) __builtin_sqrtf((A))
 
 #endif
