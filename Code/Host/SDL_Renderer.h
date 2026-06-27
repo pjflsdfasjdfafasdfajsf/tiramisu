@@ -1,4 +1,4 @@
-#include "Mem.h"
+// TODO: Maybe this could be an actual proper interface
 #if !defined(SDL_RENDERER_H)
 #define SDL_RENDERER_H
 
@@ -6,6 +6,7 @@
 
 #include "Render.h"
 #include "Types.h"
+#include "Mem.h"
 
 // NOTE: Internal textures.
 #define ReservedCircleTex 0
