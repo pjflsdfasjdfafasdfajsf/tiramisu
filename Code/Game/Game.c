@@ -29,7 +29,7 @@
 static Void CameraUpdate(Camera *Camera, V2 Target, V2I Viewport, V2 World, Float32 Delta)
 {
     Assert(Camera);
-    
+
     V2 Desired = V2Make(Clamp(Target.X - Viewport.X * 0.5f, 0, World.X - Viewport.X), Clamp(Target.Y - Viewport.Y * 0.5f, 0, World.Y - Viewport.Y));
     Float32 Speed = 10.0f;
     Camera->Pos = V2Add(Camera->Pos, V2Scale(V2Sub(Desired, Camera->Pos), Speed * Delta));
@@ -82,7 +82,7 @@ static inline Void MapDraw(RenderBuf *RenderBuf, State *State)
 
             Rect Tile = RectMake(X * MapTileSize, Y * MapTileSize, MapTileSize, MapTileSize);
             Tile.Pos = CameraWorldToScreen(State->Camera, Tile.Pos);
-            
+
             Color Color = Black;
 
             switch (TileID)

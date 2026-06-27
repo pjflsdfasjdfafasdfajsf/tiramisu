@@ -56,7 +56,7 @@ typedef enum PlayerState
     PlayerState_Normal,
     PlayerState_Dash,
     PlayerState_Slam,
-    PlayerState_Hook,    
+    PlayerState_Hook,
 } PlayerState;
 
 typedef struct Player

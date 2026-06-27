@@ -19,7 +19,8 @@ typedef struct
     Uint32 ValueLen;
 } KeyValuePair;
 
-typedef struct {
+typedef struct
+{
     KeyValuePair *Pairs;
     Uint32 Count;
 

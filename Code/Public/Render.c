@@ -98,7 +98,7 @@ Void RenderBufDrawRect(RenderBuf *RenderBuf, TexHandle Tex, Rect Dst, Rect Src, 
     {
         Cmd->Header.Type = RenderCommand_DrawRect;
         Cmd->Header.Size = BufAlignUp(sizeof(RenderDrawRect));
-    
+
         Cmd->Tex = Tex;
         Cmd->Dst = Dst;
         Cmd->Src = Src;
@@ -117,7 +117,7 @@ Void RenderBufDrawCircle(RenderBuf *RenderBuf, V2 Center, Float32 Radius, Color 
         Cmd->Header.Size = BufAlignUp(sizeof(RenderDrawCircle));
 
         Cmd->Center = Center;
-        Cmd->Radius = Radius;    
+        Cmd->Radius = Radius;
         Cmd->Color = Color;
         Cmd->Filled = Filled;
     }
@@ -136,7 +136,7 @@ Void RenderBufDrawLine(RenderBuf *RenderBuf, V2 Start, V2 End, Color Color)
         Cmd->End = End;
         Cmd->Color = Color;
     }
- }
+}
 
 Void RenderBufReset(RenderBuf *RenderBuf)
 {

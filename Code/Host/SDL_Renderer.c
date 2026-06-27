@@ -1,29 +1,29 @@
 //
 // NOTE: Renderer implementation with SDL_Renderer
-// 
+//
 #include "SDL.h"
 
 #define SegmentLength 2.0f
 
 Bool RenderCircle(SDL_Renderer *Renderer, V2 Center, Float32 Radius)
 {
-	Assert(Renderer);
-	Assert(Radius > 0.0f);
+    Assert(Renderer);
+    Assert(Radius > 0.0f);
 
-	Int32 N = (2 * SDL_PI_F * Radius) / SegmentLength; 
-	SDL_FPoint Points[N + 1];
+    Int32 N = (2 * SDL_PI_F * Radius) / SegmentLength;
+    SDL_FPoint Points[N + 1];
 
-	Float32 AngleStep = (2.0f * SDL_PI_F) / N;
+    Float32 AngleStep = (2.0f * SDL_PI_F) / N;
 
-	for (Int32 I = 0; I <= N; I++)
-	{
-		Float32 Angle = I * AngleStep;
-		
-		Points[I].x = Center.X + (Radius * SDL_cosf(Angle));
-		Points[I].y = Center.Y + (Radius * SDL_sinf(Angle));
-	}
+    for (Int32 I = 0; I <= N; I++)
+    {
+        Float32 Angle = I * AngleStep;
 
-	return SDL_RenderLines(Renderer, Points, N);
+        Points[I].x = Center.X + (Radius * SDL_cosf(Angle));
+        Points[I].y = Center.Y + (Radius * SDL_sinf(Angle));
+    }
+
+    return SDL_RenderLines(Renderer, Points, N);
 }
 
 Void Render(SDL *App)
@@ -166,11 +166,11 @@ Void Render(SDL *App)
 
             if (!RenderCircle(App->Renderer, DrawCircle->Center, DrawCircle->Radius))
             {
-            	LogCritical("%s", SDL_GetError());
-            	Assert(0);
+                LogCritical("%s", SDL_GetError());
+                Assert(0);
             }
-
-        } break;
+        }
+        break;
         case RenderCommand_DrawLine:
         {
             RenderDrawLine *DrawLine = (RenderDrawLine *)Cmd;
@@ -185,7 +185,8 @@ Void Render(SDL *App)
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
             }
-        } break;
+        }
+        break;
 
         case RenderCommand_None:
         default:

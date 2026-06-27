@@ -1,10 +1,10 @@
 #if !defined(UI_H)
 #define UI_H
 
-#include "Types.h"
 #include "Math.h"
 #include "Render.h"
 #include "State.h"
+#include "Types.h"
 
 #define UIID Uint32
 

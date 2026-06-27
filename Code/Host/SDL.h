@@ -3,13 +3,13 @@
 
 #include <SDL3/SDL.h>
 
-#include "Zip.h"
 #include "Runtime.h"
+#include "Zip.h"
 
 enum
 {
-    MouseButtonLeft = SDL_SCANCODE_COUNT + 0,  
-    MouseButtonRight = SDL_SCANCODE_COUNT + 1,  
+    MouseButtonLeft = SDL_SCANCODE_COUNT + 0,
+    MouseButtonRight = SDL_SCANCODE_COUNT + 1,
     MouseButtonMiddle = SDL_SCANCODE_COUNT + 2,
     KeysCount = SDL_SCANCODE_COUNT + 3,
 };

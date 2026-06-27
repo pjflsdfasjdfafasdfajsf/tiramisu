@@ -100,7 +100,7 @@ typedef struct
 typedef struct
 {
     RenderHeader Header;
-    
+
     V2 Center;
     Float32 Radius;
     Color Color;
@@ -111,7 +111,7 @@ typedef struct
 typedef struct
 {
     RenderHeader Header;
-    
+
     V2 Start;
     V2 End;
     Color Color;

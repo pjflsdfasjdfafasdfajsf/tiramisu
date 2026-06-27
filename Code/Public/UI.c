@@ -2,7 +2,7 @@
 
 //
 // NOTE: UIContext
-// 
+//
 
 UIID UIGetCurrentID(UIContext *UI, UIID BaseID)
 {
@@ -16,7 +16,7 @@ UIID UIGetCurrentID(UIContext *UI, UIID BaseID)
 
 //
 // NOTE: UILayout
-// 
+//
 
 UILayout UILayoutBegin(V2 Start, V2 ItemSize, Float32 Spacing)
 {
@@ -94,4 +94,3 @@ Bool UIButton(RenderBuf *RenderBuf, UIContext *UI, Input *Input, Rect Bounds, co
 
     return Clicked;
 }
-

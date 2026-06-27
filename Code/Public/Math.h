@@ -63,8 +63,6 @@ V2 V2Scale(V2 X, Float32 Y);
 // NOTE: Scalar division.
 V2 V2Unscale(V2 X, Float32 Y);
 
-
-
 typedef struct
 {
     union
