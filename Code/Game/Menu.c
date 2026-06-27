@@ -11,6 +11,8 @@ Void MenuUpdateAndRender(RenderBuf *RenderBuf, State *State)
 {
     Menu *Menu = &State->Menu;
 
+    RenderBufClear(RenderBuf, Black);
+
     UILayout Layout = UILayoutBeginCenteredVertical(&Menu->UI, ScreenCenter, V2Make(180.0f, 32.0f), 10.0f);
     if (UIButton(RenderBuf, &Menu->UI, &State->Input, UILayoutNext(&Layout), "Play"))
     {
