@@ -6,8 +6,6 @@
 #include "SDL_Renderer.h"
 #include "STB.h"
 #include "State.h"
-#include <SDL3/SDL_error.h>
-#include <SDL3/SDL_video.h>
 
 #define GameZip "Game.zip"
 
