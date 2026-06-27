@@ -1,6 +1,7 @@
-
+//
+// NOTE: Renderer implementation with SDL_Renderer
+// 
 #include "SDL.h"
-#include <SDL3/SDL_error.h>
 
 #define SegmentLength 2.0f
 

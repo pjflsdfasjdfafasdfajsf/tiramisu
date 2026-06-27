@@ -1,7 +1,6 @@
 //
 // NOTE: Main game file.
 //
-#include "Math.h"
 #include <SDK.h>
 
 #define MapTileSize 40
