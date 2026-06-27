@@ -1,36 +1,134 @@
 //
 // NOTE: Renderer implementation with SDL_Renderer
 //
+#include "SDL_Renderer.h"
+#include "Mem.h"
 #include "SDL.h"
+#include <SDL3/SDL_error.h>
+#include <SDL3/SDL_render.h>
 
-#define SegmentLength 2.0f
+//
+// NOTE: Internal
+//
 
-Bool RenderCircle(SDL_Renderer *Renderer, V2 Center, Float32 Radius)
+SDL_Texture *CreateCircleTex(SDL_Renderer *Renderer, Float32 Radius, Float32 Thickness)
 {
     Assert(Renderer);
     Assert(Radius > 0.0f);
 
-    Int32 N = (2 * SDL_PI_F * Radius) / SegmentLength;
-    SDL_FPoint Points[N + 1];
+    Int32 Size = (Int32)(Radius * 2.0f);
 
-    Float32 AngleStep = (2.0f * SDL_PI_F) / N;
-
-    for (Int32 I = 0; I <= N; I++)
+    SDL_Surface *Surface = SDL_CreateSurface(Size, Size, SDL_PIXELFORMAT_RGBA8888);
+    if (!Surface)
     {
-        Float32 Angle = I * AngleStep;
-
-        Points[I].x = Center.X + (Radius * SDL_cosf(Angle));
-        Points[I].y = Center.Y + (Radius * SDL_sinf(Angle));
+        return 0;
     }
 
-    return SDL_RenderLines(Renderer, Points, N);
+    Uint32 *Pixels = Surface->pixels;
+
+    V2 Center = V2Make(Radius, Radius);
+    Float32 HalfThickness = Thickness / 2.0f;
+    // NOTE: Center radius of the stroke ring
+    Float32 StrokeCenter = Radius - (HalfThickness);
+
+    for (Int32 Y = 0; Y < Size; Y++)
+    {
+        for (Int32 X = 0; X < Size; X++)
+        {
+            V2 Pixel = V2Make((Float32)X + 0.5f, (Float32)Y + 0.5f);
+            V2 Delta = V2Sub(Pixel, Center);
+
+            Float32 RelDist = V2Len(Delta);
+            Float32 AbsDist = SDL_fabsf(RelDist - StrokeCenter);
+
+            Uint8 A = 0;
+            if (AbsDist < HalfThickness - 0.5f)
+            {
+                A = 255;
+            }
+            else if (AbsDist < HalfThickness + 0.5f)
+            {
+                Float32 Fact = (HalfThickness + 0.5f) - AbsDist;
+                A = (Uint8)(Fact * 255.0f);
+            }
+
+            Pixels[Y * Size + X] = SDL_MapSurfaceRGBA(Surface, 255, 255, 255, A);
+        }
+    }
+    SDL_Texture *Result = SDL_CreateTextureFromSurface(Renderer, Surface);
+    SDL_DestroySurface(Surface);
+
+    if (Result)
+    {
+        SDL_SetTextureScaleMode(Result, SDL_SCALEMODE_LINEAR);
+        SDL_SetTextureBlendMode(Result, SDL_BLENDMODE_BLEND);
+    }
+
+    return Result;
 }
 
-Void Render(SDL *App)
+Bool RenderCircle(SDL_Renderer *Renderer, SDL_Texture *Tex, SDL_Color Color, V2 Center, Float32 Radius)
 {
-    Assert(App);
+    Assert(Renderer);
+    Assert(Tex);
+    Assert(Radius > 0.0f);
 
-    RenderBufIterate(&App->RenderBuf, Cmd)
+    SDL_SetTextureColorMod(Tex, Color.r, Color.g, Color.b);
+    SDL_SetTextureAlphaMod(Tex, Color.a);
+
+    SDL_FRect DestRect = {
+        Center.X - Radius,
+        Center.Y - Radius,
+        Radius * 2.0f,
+        Radius * 2.0f,
+    };
+    return SDL_RenderTexture(Renderer, Tex, 0, &DestRect);
+}
+
+//
+// NOTE: Implementation
+//
+
+Renderer RendererInit(SDL_Window *Window, MemAlloc Alloc)
+{
+    Assert(Window);
+
+    Renderer Result = {0};
+
+    Result.SDL = SDL_CreateRenderer(Window, 0);
+    Result.Texs[Result.TexCount++] = CreateCircleTex(Result.SDL, 256.0f, 3.0f);
+    if (!Result.Texs[ReservedCircleTex])
+    {
+        Result.IsValid = False;
+        return Result;
+    }
+
+    if (!SDL_SetRenderLogicalPresentation(Result.SDL, InternalRes.W, InternalRes.H, SDL_LOGICAL_PRESENTATION_LETTERBOX))
+    {
+        Result.IsValid = False;
+        return Result;
+    }
+
+    Result.Buf = RenderBufInit(&Alloc, Kb(32));
+    if (!Result.Buf.IsValid)
+    {
+        // TODO: We could use this function more consistently
+        SDL_SetError("Failed to initialize render buffer");
+
+        Result.IsValid = False;
+        return Result;
+    }
+
+    Result.IsValid = True;
+    return Result;
+}
+
+// TODO: Better error handling
+Void RendererDraw(Renderer *Renderer)
+{
+    Assert(Renderer);
+
+    RenderBufIterate(&Renderer->Buf, Cmd)
     {
         switch (Cmd->Type)
         {
@@ -38,12 +136,12 @@ Void Render(SDL *App)
         {
             RenderClear *Clear = (RenderClear *)Cmd;
 
-            if (!SDL_SetRenderDrawColor(App->Renderer, Clear->Color.R, Clear->Color.G, Clear->Color.B, Clear->Color.A))
+            if (!SDL_SetRenderDrawColor(Renderer->SDL, Clear->Color.R, Clear->Color.G, Clear->Color.B, Clear->Color.A))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
             }
-            if (!SDL_RenderClear(App->Renderer))
+            if (!SDL_RenderClear(Renderer->SDL))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
@@ -55,25 +153,25 @@ Void Render(SDL *App)
         {
             RenderDrawDebugText *DrawDebugText = (RenderDrawDebugText *)Cmd;
 
-            if (!SDL_SetRenderDrawColor(App->Renderer, DrawDebugText->Color.R, DrawDebugText->Color.G, DrawDebugText->Color.B, DrawDebugText->Color.A))
+            if (!SDL_SetRenderDrawColor(Renderer->SDL, DrawDebugText->Color.R, DrawDebugText->Color.G, DrawDebugText->Color.B, DrawDebugText->Color.A))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
             }
-            if (!SDL_SetRenderScale(App->Renderer, DrawDebugText->Scale.X, DrawDebugText->Scale.Y))
+            if (!SDL_SetRenderScale(Renderer->SDL, DrawDebugText->Scale.X, DrawDebugText->Scale.Y))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
             }
 
             V2 Target = V2Div(DrawDebugText->Pos, DrawDebugText->Scale);
-            if (!SDL_RenderDebugText(App->Renderer, Target.X, Target.Y, DrawDebugText->Str))
+            if (!SDL_RenderDebugText(Renderer->SDL, Target.X, Target.Y, DrawDebugText->Str))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
             }
 
-            if (!SDL_SetRenderScale(App->Renderer, 1.0f, 1.0f))
+            if (!SDL_SetRenderScale(Renderer->SDL, 1.0f, 1.0f))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
@@ -95,18 +193,18 @@ Void Render(SDL *App)
             if (DrawRect->Tex == TexHandleInvalid)
             {
                 // NOTE: Untextured Rectangle
-                if (!SDL_SetRenderDrawColor(App->Renderer, DrawRect->Color.R, DrawRect->Color.G, DrawRect->Color.B, DrawRect->Color.A))
+                if (!SDL_SetRenderDrawColor(Renderer->SDL, DrawRect->Color.R, DrawRect->Color.G, DrawRect->Color.B, DrawRect->Color.A))
                 {
                     LogCritical("%s", SDL_GetError());
                     Assert(0);
                 }
 
-                if (DrawRect->Filled && !SDL_RenderFillRect(App->Renderer, &DstRect))
+                if (DrawRect->Filled && !SDL_RenderFillRect(Renderer->SDL, &DstRect))
                 {
                     LogCritical("%s", SDL_GetError());
                     Assert(0);
                 }
-                else if (!SDL_RenderRect(App->Renderer, &DstRect))
+                else if (!SDL_RenderRect(Renderer->SDL, &DstRect))
                 {
                     LogCritical("%s", SDL_GetError());
                     Assert(0);
@@ -115,14 +213,14 @@ Void Render(SDL *App)
             else
             {
                 // NOTE: Textured Rectangle
-                if (DrawRect->Tex >= App->TexCount)
+                if (DrawRect->Tex >= Renderer->TexCount)
                 {
                     LogCritical("Invalid texture handle: %d", DrawRect->Tex);
                     Assert(0);
                     break;
                 }
 
-                SDL_Texture *Tex = App->Texs[DrawRect->Tex];
+                SDL_Texture *Tex = Renderer->Texs[DrawRect->Tex];
                 if (!Tex)
                 {
                     LogCritical("Attempted to draw null texture at handle: %d", DrawRect->Tex);
@@ -146,7 +244,7 @@ Void Render(SDL *App)
                     SrcPtr = 0;
                 }
 
-                if (!SDL_RenderTexture(App->Renderer, Tex, SrcPtr, &DstRect))
+                if (!SDL_RenderTexture(Renderer->SDL, Tex, SrcPtr, &DstRect))
                 {
                     LogCritical("%s", SDL_GetError());
                     Assert(0);
@@ -158,13 +256,12 @@ Void Render(SDL *App)
         {
             RenderDrawCircle *DrawCircle = (RenderDrawCircle *)Cmd;
 
-            if (!SDL_SetRenderDrawColor(App->Renderer, DrawCircle->Color.R, DrawCircle->Color.G, DrawCircle->Color.B, DrawCircle->Color.A))
-            {
-                LogCritical("%s", SDL_GetError());
-                Assert(0);
-            }
-
-            if (!RenderCircle(App->Renderer, DrawCircle->Center, DrawCircle->Radius))
+            SDL_Color Color = {
+                DrawCircle->Color.R,
+                DrawCircle->Color.G,
+                DrawCircle->Color.B,
+                DrawCircle->Color.A};
+            if (!RenderCircle(Renderer->SDL, Renderer->Texs[ReservedCircleTex], Color, DrawCircle->Center, DrawCircle->Radius))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
@@ -175,12 +272,12 @@ Void Render(SDL *App)
         {
             RenderDrawLine *DrawLine = (RenderDrawLine *)Cmd;
 
-            if (!SDL_SetRenderDrawColor(App->Renderer, DrawLine->Color.R, DrawLine->Color.G, DrawLine->Color.B, DrawLine->Color.A))
+            if (!SDL_SetRenderDrawColor(Renderer->SDL, DrawLine->Color.R, DrawLine->Color.G, DrawLine->Color.B, DrawLine->Color.A))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
             }
-            if (!SDL_RenderLine(App->Renderer, DrawLine->Start.X, DrawLine->Start.Y, DrawLine->End.X, DrawLine->End.Y))
+            if (!SDL_RenderLine(Renderer->SDL, DrawLine->Start.X, DrawLine->Start.Y, DrawLine->End.X, DrawLine->End.Y))
             {
                 LogCritical("%s", SDL_GetError());
                 Assert(0);
@@ -198,6 +295,6 @@ Void Render(SDL *App)
         }
     }
 
-    SDL_RenderPresent(App->Renderer);
-    RenderBufReset(&App->RenderBuf);
+    SDL_RenderPresent(Renderer->SDL);
+    RenderBufReset(&Renderer->Buf);
 }

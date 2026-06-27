@@ -3,8 +3,11 @@
 #include "Math.h"
 #include "Render.h"
 #include "Runtime.h"
+#include "SDL_Renderer.h"
 #include "STB.h"
 #include "State.h"
+#include <SDL3/SDL_error.h>
+#include <SDL3/SDL_video.h>
 
 #define GameZip "Game.zip"
 
@@ -28,6 +31,7 @@ static Void HostPrintLine(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uint32 Len)
     }
 }
 
+// TODO: move this out to SDL_Renderer.c somehow.
 static TexHandle HostAllocTexture(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uint32 Size)
 {
     wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
@@ -52,7 +56,7 @@ static TexHandle HostAllocTexture(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uin
     SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
     Assert(App);
 
-    if (App->TexCount >= ArrayCount(App->Texs))
+    if (App->Renderer.TexCount >= ArrayCount(App->Renderer.Texs))
     {
         LogCritical("Too many textures.\n");
 
@@ -71,7 +75,7 @@ static TexHandle HostAllocTexture(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uin
         return TexHandleInvalid;
     }
 
-    SDL_Texture *Tex = SDL_CreateTexture(App->Renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, Width, Height);
+    SDL_Texture *Tex = SDL_CreateTexture(App->Renderer.SDL, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, Width, Height);
     if (!Tex)
     {
         LogCritical("%s\n", SDL_GetError());
@@ -88,9 +92,9 @@ static TexHandle HostAllocTexture(wasm_exec_env_t ExecEnv, Uint32 PtrOffset, Uin
 
     stbi_image_free(Pixels);
 
-    TexHandle Handle = App->TexCount;
-    App->Texs[Handle] = Tex;
-    App->TexCount++;
+    TexHandle Handle = App->Renderer.TexCount;
+    App->Renderer.Texs[Handle] = Tex;
+    App->Renderer.TexCount++;
 
     return Handle;
 }
@@ -460,7 +464,7 @@ static SDL_EnumerationResult SDLCALL EnumerateDirectoryCallback(Void *UserData, 
 }
 
 //
-// NOTE: SDL
+// NOTE: Implementation
 //
 
 Void Update(SDL *App)
@@ -514,7 +518,7 @@ Void Update(SDL *App)
         // NOTE: This handles the case where you got an error on compilation
         if (Mod->Rt.IsValid)
         {
-            if (!RtUpdate(&Mod->Rt, &App->State, &App->RenderBuf))
+            if (!RtUpdate(&Mod->Rt, &App->State, &App->Renderer.Buf))
             {
                 Assert(0);
             }
@@ -548,19 +552,6 @@ SDL Init()
         LogCritical("%s", SDL_GetError());
         Assert(0);
     }
-    if (!SDL_CreateWindowAndRenderer("Game", InternalRes.W, InternalRes.H, SDL_WINDOW_RESIZABLE, &Result.Window, &Result.Renderer))
-    {
-        LogCritical("%s", SDL_GetError());
-        Assert(0);
-    }
-
-    if (!SDL_SetRenderLogicalPresentation(Result.Renderer, InternalRes.W, InternalRes.H, SDL_LOGICAL_PRESENTATION_LETTERBOX))
-    {
-        LogCritical("%s", SDL_GetError());
-        Assert(0);
-    }
-
-    ApplyInputBindings(&Result);
 
     Void *Mem = SDL_malloc(Kb(64));
     if (!Mem)
@@ -569,11 +560,20 @@ SDL Init()
     }
     Result.MemAlloc = MemAllocInit(Mem, Kb(64));
 
-    Result.RenderBuf = RenderBufInit(&Result.MemAlloc, Kb(32));
-    if (!Result.RenderBuf.IsValid)
+    Result.Window = SDL_CreateWindow("Game", InternalRes.W, InternalRes.H, SDL_WINDOW_RESIZABLE);
+    if (!Result.Window)
     {
+        LogCritical("%s", SDL_GetError());
         Assert(0);
     }
+
+    Result.Renderer = RendererInit(Result.Window, Result.MemAlloc);
+    if (!Result.Renderer.IsValid) {
+        LogCritical("%s", SDL_GetError());
+        Assert(0);
+    }
+
+    ApplyInputBindings(&Result);
 
     if (!RtGlobalInit())
     {
@@ -657,6 +657,11 @@ static inline Action *GetMouseAction(SDL *App, Uint8 Code)
     return 0;
 }
 
+Void Render(SDL *App) {
+    Assert(App);
+    RendererDraw(&App->Renderer);
+}
+
 Bool Poll(SDL *App)
 {
     Assert(App);
@@ -684,7 +689,8 @@ Bool Poll(SDL *App)
 
         case SDL_EVENT_MOUSE_MOTION:
         {
-            SDL_ConvertEventToRenderCoordinates(App->Renderer, &Ev);
+            // TODO: Can we not do that to not do that
+            SDL_ConvertEventToRenderCoordinates(App->Renderer.SDL, &Ev);
             App->State.Input.MousePos.X = Ev.motion.x;
             App->State.Input.MousePos.Y = Ev.motion.y;
         }

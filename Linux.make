@@ -36,7 +36,8 @@ TEST_OBJS     := $(patsubst Code/Host/%.c, $(OBJ_DIR)/Test/%.o, $(TEST_SRC))
 
 # NOTE: Global flags
 CPPFLAGS := -ICode/Public -IExt/WAMR/Include -IExt/SDL3/Include -I$(BUILD_DIR) -MMD -MP
-CFLAGS   := -Wall -Wextra
+# TODO: We need to have Release and Debug flags
+CFLAGS   := -Wall -Wextra -g
 LDFLAGS  := -no-pie
 LDLIBS   := $(BUILD_DIR)/libSDK.a $(SDL3_LIB) $(WAMR_LIB) $(SYSTEM_LIBS)
 

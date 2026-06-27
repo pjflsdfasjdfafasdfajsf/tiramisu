@@ -5,6 +5,7 @@
 
 #include "Runtime.h"
 #include "Zip.h"
+#include "SDL_Renderer.h"
 
 enum
 {
@@ -31,7 +32,8 @@ typedef struct
 typedef struct
 {
     SDL_Window *Window;
-    SDL_Renderer *Renderer;
+
+    Renderer Renderer;
     // NOTE: The game loading logic is basically the same as mods except for
     // the file that is being loaded. If all regular mods are loaded from Mods
     // directory the game is just hardcoded to be loaded from Game.wasm. Since
@@ -46,11 +48,6 @@ typedef struct
     Uint32 ModCount;
 
     MemAlloc MemAlloc;
-    RenderBuf RenderBuf;
-
-    // NOTE: Textures
-    SDL_Texture *Texs[512];
-    Uint32 TexCount;
 
     Action *Keys[KeysCount];
     State State;
@@ -61,10 +58,8 @@ typedef struct
 SDL Init();
 
 Bool Poll(SDL *App);
-
-Void Update(SDL *App);
-
 Void Render(SDL *App);
+Void Update(SDL *App);
 
 #define LogCritical(Message, ...) SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "%s:%d (%s): " Message, __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 
