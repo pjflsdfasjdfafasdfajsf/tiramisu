@@ -121,26 +121,7 @@ Bool RtLoadOne(Runtime *Rt, const char *Path)
 
     Function(UpdateAndRender, Void UpdateAndRender(*State, *ExtraMem, *RenderBuf));
 
-    Function(GetState, State * GetState(Void));
-    Function(GetRenderBuf, RenderBuf * GetRenderBuf(Void));
-    Function(GetExtraMem, Void * GetExtraMem(Void));
-
 #undef Function
-
-#define Pointer(Name)                                                       \
-    {                                                                       \
-        Uint32 Results[1] = {0};                                            \
-        if (wasm_runtime_call_wasm(Rt->ExecEnv, Rt->Get##Name, 0, Results)) \
-        {                                                                   \
-            Rt->Name = Results[0];                                          \
-        }                                                                   \
-    }
-
-    Pointer(State);
-    Pointer(RenderBuf);
-    Pointer(ExtraMem);
-
-#undef Pointer
 
     Rt->IsValid = True;
     return True;
@@ -153,7 +134,7 @@ Bool RtUpdate(Runtime *Rt)
     Assert(Rt->ModuleInst);
 
     Uint32 Args[0] = {};
-    if (!wasm_runtime_call_wasm(Rt->ExecEnv, Rt->UpdateAndRender, ArrayCount(Args), Args))
+    if (!wasm_runtime_call_wasm(Rt->ExecEnv, Rt->UpdateAndRender, 0, Args))
     {
         LogCritical("wasm_runtime_call_wasm  (runtime error): %s\n", wasm_runtime_get_exception(Rt->ModuleInst));
         return False;

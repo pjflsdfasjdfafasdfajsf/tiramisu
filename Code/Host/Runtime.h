@@ -1,9 +1,9 @@
 #if !defined(HOST_H)
 #define HOST_H
 
-#include "SDK.h"
-
 #include <wasm_export.h>
+
+#include "Types.h"
 
 typedef struct
 {
@@ -16,11 +16,6 @@ typedef struct
     wasm_function_inst_t GetState;
     wasm_function_inst_t GetRenderBuf;
     wasm_function_inst_t GetExtraMem;
-
-    // NOTE: NOT REAL HOST POINTERS!!!!
-    Uint32 State;
-    Uint32 RenderBuf;
-    Uint32 ExtraMem;
 
     void *Bytes;
 

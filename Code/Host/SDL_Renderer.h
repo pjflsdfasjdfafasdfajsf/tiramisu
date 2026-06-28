@@ -4,27 +4,26 @@
 
 #include <SDL3/SDL.h>
 
-#include "Mem.h"
-#include "Render.h"
+#include "Ent.h"
 #include "Types.h"
 
+#define MaxTexs 512
 // NOTE: Internal textures.
-#define ReservedCircleTex 0
+#define ReservedCircleTex MaxTexs - 1
 
 typedef struct
 {
     SDL_Renderer *SDL;
     // NOTE: Some textures are reserved internally.
     // See Reserved* macros.
-    SDL_Texture *Texs[512];
+    SDL_Texture *Texs[MaxTexs];
     Uint32 TexCount;
-
-    RenderBuf Buf;
 
     Bool IsValid;
 } Renderer;
 
-Renderer RendererInit(SDL_Window *Window, MemAlloc Alloc);
-Bool RendererDraw(Renderer *Renderer);
+// fuck
+Renderer RendererInit(SDL_Window *Window);
+Bool RendererDraw(World *World, Renderer *Renderer);
 
 #endif

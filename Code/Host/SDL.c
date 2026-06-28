@@ -1,7 +1,9 @@
 #include "SDL.h"
+#include "Ent.h"
 #include "KeyValue.h"
 #include "Runtime.h"
 #include "SDK.h"
+#include "SDL_Renderer.h"
 #include "STB.h"
 
 #define GameZip "Game.zip"
@@ -217,7 +219,7 @@ static Void HostAddComp(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 Siz
     if (World->CompTypeCount >= MaxCompTypes)
     {
         LogCritical("Maximum component types (%u) exceeded.\n", MaxCompTypes);
-        Result->TypeID = 0;
+        Result->ID = 0;
         Result->IsValid = False;
         return;
     }
@@ -225,7 +227,7 @@ static Void HostAddComp(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 Siz
     if (Size > MaxCompSize)
     {
         LogCritical("Comp size %u exceeds MaxCompSize (%u).\n", Size, MaxCompSize);
-        Result->TypeID = 0;
+        Result->ID = 0;
         Result->IsValid = False;
         return;
     }
@@ -234,7 +236,7 @@ static Void HostAddComp(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 Siz
     World->CompSizes[TypeID] = Size;
     World->CompTypeCount++;
 
-    Result->TypeID = TypeID;
+    Result->ID = TypeID;
     Result->IsValid = True;
 }
 
@@ -264,14 +266,14 @@ static Void HostAddEnt(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset)
         if (!World->EntActive[I])
         {
             World->EntActive[I] = True;
-            Result->EntID = I;
+            Result->ID = I;
             Result->IsValid = True;
             return;
         }
     }
 
     LogCritical("Maximum entity capacity (%u) reached.\n", MaxEnts);
-    Result->EntID = 0;
+    Result->ID = 0;
     Result->IsValid = False;
 }
 
@@ -356,6 +358,116 @@ static Void HostEntGetComp(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 
     }
 }
 
+static Void HostEntAddTransform(wasm_exec_env_t ExecEnv, Uint32 EntID, Uint32 TransformOffset)
+{
+    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
+    SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
+    Assert(App);
+
+    World *World = &App->World;
+
+    if (EntID >= MaxEnts)
+    {
+        LogCritical("Invalid Entity ID %u.\n", EntID);
+        return;
+    }
+
+    if (!World->EntActive[EntID])
+    {
+        LogCritical("Entity %u is inactive.\n", EntID);
+        return;
+    }
+
+    // TODO: HACK
+    CompID TransformTypeID = MaxCompTypes;
+    for (Uint32 I = 0; I < World->CompTypeCount; ++I)
+    {
+        if (World->CompSizes[I] == sizeof(CompTransform))
+        {
+            TransformTypeID = I;
+            break;
+        }
+    }
+
+    if (TransformTypeID >= MaxCompTypes)
+    {
+        LogCritical("CompTransform component type is not registered.\n");
+        return;
+    }
+
+    Usize Size = World->CompSizes[TransformTypeID];
+    if (!wasm_runtime_validate_app_addr(ModuleInst, TransformOffset, Size))
+    {
+        LogCritical("Component input memory bounds violation.\n");
+        return;
+    }
+
+    const Void *Mem = wasm_runtime_addr_app_to_native(ModuleInst, TransformOffset);
+    if (!Mem)
+    {
+        LogCritical("Invalid dynamic component memory source.\n");
+        return;
+    }
+
+    SDL_memcpy(World->CompData[EntID][TransformTypeID], Mem, Size);
+    World->CompPresent[EntID][TransformTypeID] = True;
+}
+
+static Void HostEntAddRenderable(wasm_exec_env_t ExecEnv, Uint32 EntID, Uint32 RenderableOffset)
+{
+    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
+    SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
+    Assert(App);
+
+    World *World = &App->World;
+
+    if (EntID >= MaxEnts)
+    {
+        LogCritical("Invalid Entity ID %u.\n", EntID);
+        return;
+    }
+
+    if (!World->EntActive[EntID])
+    {
+        LogCritical("Entity %u is inactive.\n", EntID);
+        return;
+    }
+
+    CompID RenderableTypeID = CompIDInvalid;
+    for (Uint32 I = 0; I < World->CompTypeCount; ++I)
+    {
+        // TODO: HACK
+        if (World->CompSizes[I] > sizeof(CompTransform))
+        {
+            RenderableTypeID = I;
+            break;
+        }
+    }
+
+    if (RenderableTypeID >= MaxCompTypes)
+    {
+        LogCritical("CompRenderable component type is not registered.\n");
+        return;
+    }
+
+    Usize Size = World->CompSizes[RenderableTypeID];
+    if (!wasm_runtime_validate_app_addr(ModuleInst, RenderableOffset, Size))
+    {
+        LogCritical("Component input memory bounds violation.\n");
+        return;
+    }
+
+    const Void *Mem = wasm_runtime_addr_app_to_native(ModuleInst, RenderableOffset);
+    if (!Mem)
+    {
+        LogCritical("Invalid dynamic component memory source.\n");
+        return;
+    }
+
+    SDL_memcpy(World->CompData[EntID][RenderableTypeID], Mem, Size);
+    World->CompPresent[EntID][RenderableTypeID] = True;
+}
+
 //
 // NOTE: Internal
 //
@@ -377,6 +489,7 @@ static inline Float32 GetDeltaSeconds()
 
     return DeltaSeconds;
 }
+
 static inline Int64 GetFileModTime(const char *Path)
 {
     SDL_PathInfo Info;
@@ -722,6 +835,21 @@ SDL Init()
         Assert(0);
     }
 
+    Result.Renderer = RendererInit(Result.Window);
+    if (!Result.Renderer.IsValid)
+    {
+        LogCritical("%s", SDL_GetError());
+        Assert(0);
+    }
+
+    Assert(sizeof(CompTransform) <= MaxCompSize);
+    Result.World.CompSizes[Result.World.CompTypeCount] = sizeof(CompTransform);
+    Result.World.CompTypeCount++;
+
+    Assert(sizeof(CompRenderable) <= MaxCompSize);
+    Result.World.CompSizes[Result.World.CompTypeCount] = sizeof(CompRenderable);
+    Result.World.CompTypeCount++;
+
     // ApplyInputBindings(&Result);
 
     if (!RtGlobalInit())
@@ -740,12 +868,16 @@ SDL Init()
     // debug as all it was just a HANG.
 
     static NativeSymbol Natives[] = {
+        // NOTE: I/O
         {"PrintLine", (void *)HostPrintLine, "(ii)", 0},
         // {"AllocTexture", (void *)HostAllocTexture, "(ii)i", 0},
         {"ReadFile", (void *)HostReadFile, "(iiii)i", 0},
+        // NOTE: ECS
         {"AddComp", (void *)HostAddComp, "(ii)", 0},
         {"AddEnt", (void *)HostAddEnt, "(i)", 0},
         {"EntAddComp", (void *)HostEntAddComp, "(iii)", 0},
+        {"EntAddTransform", (void *)HostEntAddTransform, "(ii)", 0},
+        {"EntAddRenderable", (void *)HostEntAddRenderable, "(ii)", 0},
         {"EntGetComp", (void *)HostEntGetComp, "(iii)", 0}};
     if (!wasm_runtime_register_natives("env", Natives, ArrayCount(Natives)))
     {
@@ -815,11 +947,11 @@ Void Render(SDL *App)
 {
     Assert(App);
 
-    // if (!RendererDraw(&App->Renderer))
-    // {
-    //     LogCritical("%s", SDL_GetError());
-    //     Assert(0);
-    // }
+    if (!RendererDraw(&App->World, &App->Renderer))
+    {
+        LogCritical("%s", SDL_GetError());
+        Assert(0);
+    }
 }
 
 Bool Poll(SDL *App)

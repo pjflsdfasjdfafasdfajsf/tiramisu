@@ -2,7 +2,8 @@
 // NOTE: Renderer implementation with SDL_Renderer
 //
 #include "SDL_Renderer.h"
-#include "Mem.h"
+#include "Ent.h"
+#include "Math.h"
 
 //
 // NOTE: Internal
@@ -86,31 +87,24 @@ Bool RenderCircle(SDL_Renderer *Renderer, SDL_Texture *Tex, SDL_Color Color, V2 
 // NOTE: Implementation
 //
 
-Renderer RendererInit(SDL_Window *Window, MemAlloc Alloc)
+Renderer RendererInit(SDL_Window *Window)
 {
     Assert(Window);
 
     Renderer Result = {0};
 
     Result.SDL = SDL_CreateRenderer(Window, 0);
-    Result.Texs[Result.TexCount++] = CreateCircleTex(Result.SDL, 256.0f, 3.0f);
+    Result.Texs[ReservedCircleTex] = CreateCircleTex(Result.SDL, 256.0f, 3.0f);
     if (!Result.Texs[ReservedCircleTex])
     {
         Result.IsValid = False;
         return Result;
     }
+    // NOTE: Do this since we have 0 reserved as 'no texture'.
+    Result.TexCount++;
 
-    if (!SDL_SetRenderLogicalPresentation(Result.SDL, InternalRes.W, InternalRes.H, SDL_LOGICAL_PRESENTATION_LETTERBOX))
+    if (!SDL_SetRenderLogicalPresentation(Result.SDL, 1280, 720, SDL_LOGICAL_PRESENTATION_LETTERBOX))
     {
-        Result.IsValid = False;
-        return Result;
-    }
-
-    Result.Buf = RenderBufInit(&Alloc, Kb(32));
-    if (!Result.Buf.IsValid)
-    {
-        SDL_SetError("Failed to initialize render buffer");
-
         Result.IsValid = False;
         return Result;
     }
@@ -119,165 +113,176 @@ Renderer RendererInit(SDL_Window *Window, MemAlloc Alloc)
     return Result;
 }
 
-// TODO: Better error handling
-Bool RendererDraw(Renderer *Renderer)
+// TODO: Lines are very long here.
+Bool RendererDraw(World *World, Renderer *Renderer)
 {
     Assert(Renderer);
 
-    RenderBufIterate(&Renderer->Buf, Cmd)
+    if (!SDL_SetRenderDrawColor(Renderer->SDL, 0, 0, 0, 0))
     {
-        switch (Cmd->Type)
-        {
-        case RenderCommand_Clear:
-        {
-            RenderClear *Clear = (RenderClear *)Cmd;
+        return False;
+    }
+    if (!SDL_RenderClear(Renderer->SDL))
+    {
+        return False;
+    }
 
-            if (!SDL_SetRenderDrawColor(Renderer->SDL, Clear->Color.R, Clear->Color.G, Clear->Color.B, Clear->Color.A))
-            {
-                return False;
-            }
-            if (!SDL_RenderClear(Renderer->SDL))
-            {
-                return False;
-            }
+    CompID TransformID = CompIDInvalid;
+    CompID RenderableID = CompIDInvalid;
+
+    for (Uint32 I = 0; I < World->CompTypeCount; ++I)
+    {
+        // TODO: HACK
+        if (World->CompSizes[I] == sizeof(CompTransform))
+        {
+            TransformID = I;
         }
-        break;
-
-        case RenderCommand_DrawDebugText:
+        else if (World->CompSizes[I] == sizeof(CompRenderable))
         {
-            RenderDrawDebugText *DrawDebugText = (RenderDrawDebugText *)Cmd;
-
-            if (!SDL_SetRenderDrawColor(Renderer->SDL, DrawDebugText->Color.R, DrawDebugText->Color.G, DrawDebugText->Color.B, DrawDebugText->Color.A))
-            {
-                return False;
-            }
-            if (!SDL_SetRenderScale(Renderer->SDL, DrawDebugText->Scale.X, DrawDebugText->Scale.Y))
-            {
-                return False;
-            }
-
-            V2 Target = V2Div(DrawDebugText->Pos, DrawDebugText->Scale);
-            if (!SDL_RenderDebugText(Renderer->SDL, Target.X, Target.Y, DrawDebugText->Str))
-            {
-                return False;
-            }
-
-            if (!SDL_SetRenderScale(Renderer->SDL, 1.0f, 1.0f))
-            {
-                return False;
-            }
+            RenderableID = I;
         }
-        break;
+    }
 
-        case RenderCommand_DrawRect:
+    for (EntID EntID = 0; EntID < MaxEnts; ++EntID)
+    {
+        if (!World->EntActive[EntID])
         {
-            RenderDrawRect *DrawRect = (RenderDrawRect *)Cmd;
+            continue;
+        }
 
-            SDL_FRect DstRect = {
-                DrawRect->Dst.Pos.X,
-                DrawRect->Dst.Pos.Y,
-                DrawRect->Dst.Size.W,
-                DrawRect->Dst.Size.H,
-            };
+        if (World->CompPresent[EntID][RenderableID])
+        {
+            CompRenderable *Renderable = (CompRenderable *)World->CompData[EntID][RenderableID];
+            CompTransform *Transform = (CompTransform *)World->CompData[EntID][TransformID];
 
-            if (DrawRect->Tex == TexHandleInvalid)
+            switch (Renderable->Type)
             {
-                // NOTE: Untextured Rectangle
-                if (!SDL_SetRenderDrawColor(Renderer->SDL, DrawRect->Color.R, DrawRect->Color.G, DrawRect->Color.B, DrawRect->Color.A))
+            case RenderableType_DebugText:
+            {
+                if (!SDL_SetRenderDrawColor(Renderer->SDL, Renderable->DebugText.Color.R, Renderable->DebugText.Color.G, Renderable->DebugText.Color.B, Renderable->DebugText.Color.A))
+                {
+                    return False;
+                }
+                if (!SDL_SetRenderScale(Renderer->SDL, Renderable->DebugText.Scale.X, Renderable->DebugText.Scale.Y))
                 {
                     return False;
                 }
 
-                if (DrawRect->Filled && !SDL_RenderFillRect(Renderer->SDL, &DstRect))
+                V2 Target = V2Div(Transform->Pos, Renderable->DebugText.Scale);
+                if (!SDL_RenderDebugText(Renderer->SDL, Target.X, Target.Y, Renderable->DebugText.Str))
                 {
                     return False;
                 }
-                else if (!SDL_RenderRect(Renderer->SDL, &DstRect))
+
+                if (!SDL_SetRenderScale(Renderer->SDL, 1.0f, 1.0f))
                 {
                     return False;
                 }
             }
-            else
+            break;
+
+            case RenderableType_Rect:
             {
-                // NOTE: Textured Rectangle
-                if (DrawRect->Tex >= Renderer->TexCount)
-                {
-                    SDL_SetError("Invalid texture handle: %d", DrawRect->Tex);
-                    return False;
-                }
-
-                SDL_Texture *Tex = Renderer->Texs[DrawRect->Tex];
-                if (!Tex)
-                {
-                    SDL_SetError("Attempted to draw null texture at handle: %d", DrawRect->Tex);
-                    return False;
-                }
-
-                SDL_SetTextureColorMod(Tex, DrawRect->Color.R, DrawRect->Color.G, DrawRect->Color.B);
-                SDL_SetTextureAlphaMod(Tex, DrawRect->Color.A);
-
-                SDL_FRect SrcRect = {
-                    DrawRect->Src.Pos.X,
-                    DrawRect->Src.Pos.Y,
-                    DrawRect->Src.Size.W,
-                    DrawRect->Src.Size.H,
+                SDL_FRect DstRect = {
+                    Transform->Pos.X,
+                    Transform->Pos.Y,
+                    Transform->Size.W,
+                    Transform->Size.H,
                 };
 
-                SDL_FRect *SrcPtr = &SrcRect;
-                if (DrawRect->Src.Pos.X == 0 && DrawRect->Src.Pos.Y == 0 && DrawRect->Src.Size.W == 0)
+                if (Renderable->Rect.Tex == TexHandleInvalid)
                 {
-                    SrcPtr = 0;
-                }
+                    // NOTE: Untextured Rectangle
+                    if (!SDL_SetRenderDrawColor(Renderer->SDL, Renderable->Rect.Color.R, Renderable->Rect.Color.G, Renderable->Rect.Color.B, Renderable->Rect.Color.A))
+                    {
+                        return False;
+                    }
 
-                if (!SDL_RenderTexture(Renderer->SDL, Tex, SrcPtr, &DstRect))
+                    if (Renderable->Rect.Filled && !SDL_RenderFillRect(Renderer->SDL, &DstRect))
+                    {
+                        return False;
+                    }
+                    else if (!SDL_RenderRect(Renderer->SDL, &DstRect))
+                    {
+                        return False;
+                    }
+                }
+                else
+                {
+                    // NOTE: Textured Rectangle
+                    if (Renderable->Rect.Tex >= Renderer->TexCount)
+                    {
+                        SDL_SetError("Invalid texture handle: %d", Renderable->Rect.Tex);
+                        return False;
+                    }
+
+                    SDL_Texture *Tex = Renderer->Texs[Renderable->Rect.Tex];
+                    if (!Tex)
+                    {
+                        SDL_SetError("Attempted to draw null texture at handle: %d", Renderable->Rect.Tex);
+                        return False;
+                    }
+
+                    SDL_SetTextureColorMod(Tex, Renderable->Rect.Color.R, Renderable->Rect.Color.G, Renderable->Rect.Color.B);
+                    SDL_SetTextureAlphaMod(Tex, Renderable->Rect.Color.A);
+
+                    SDL_FRect SrcRect = {
+                        Renderable->Rect.Src.Pos.X,
+                        Renderable->Rect.Src.Pos.Y,
+                        Renderable->Rect.Src.Size.W,
+                        Renderable->Rect.Src.Size.H,
+                    };
+
+                    SDL_FRect *SrcPtr = &SrcRect;
+                    if (Renderable->Rect.Src.Pos.X == 0 && Renderable->Rect.Src.Pos.Y == 0 && Renderable->Rect.Src.Size.W == 0)
+                    {
+                        SrcPtr = 0;
+                    }
+
+                    if (!SDL_RenderTexture(Renderer->SDL, Tex, SrcPtr, &DstRect))
+                    {
+                        return False;
+                    }
+                }
+            }
+            break;
+            case RenderableType_Circle:
+            {
+                SDL_Color Color = {
+                    Renderable->Circle.Color.R,
+                    Renderable->Circle.Color.G,
+                    Renderable->Circle.Color.B,
+                    Renderable->Circle.Color.A};
+                if (!RenderCircle(Renderer->SDL, Renderer->Texs[ReservedCircleTex], Color, Transform->Pos, Renderable->Circle.Radius))
                 {
                     return False;
                 }
             }
-        }
-        break;
-        case RenderCommand_DrawCircle:
-        {
-            RenderDrawCircle *DrawCircle = (RenderDrawCircle *)Cmd;
-
-            SDL_Color Color = {
-                DrawCircle->Color.R,
-                DrawCircle->Color.G,
-                DrawCircle->Color.B,
-                DrawCircle->Color.A};
-            if (!RenderCircle(Renderer->SDL, Renderer->Texs[ReservedCircleTex], Color, DrawCircle->Center, DrawCircle->Radius))
+            break;
+            case RenderableType_Line:
             {
+                if (!SDL_SetRenderDrawColor(Renderer->SDL, Renderable->Line.Color.R, Renderable->Line.Color.G, Renderable->Line.Color.B, Renderable->Line.Color.A))
+                {
+                    return False;
+                }
+                if (!SDL_RenderLine(Renderer->SDL, Transform->Pos.X, Transform->Pos.Y, Renderable->Line.End.X, Renderable->Line.End.Y))
+                {
+                    return False;
+                }
+            }
+            break;
+
+            case RenderableType_None:
+            default:
+            {
+                SDL_SetError("Unrecognized or not implemented render command (%d)", Renderable->Type);
                 return False;
             }
-        }
-        break;
-        case RenderCommand_DrawLine:
-        {
-            RenderDrawLine *DrawLine = (RenderDrawLine *)Cmd;
-
-            if (!SDL_SetRenderDrawColor(Renderer->SDL, DrawLine->Color.R, DrawLine->Color.G, DrawLine->Color.B, DrawLine->Color.A))
-            {
-                return False;
+            break;
             }
-            if (!SDL_RenderLine(Renderer->SDL, DrawLine->Start.X, DrawLine->Start.Y, DrawLine->End.X, DrawLine->End.Y))
-            {
-                return False;
-            }
-        }
-        break;
-
-        case RenderCommand_None:
-        default:
-        {
-            SDL_SetError("Unrecognized or not implemented render command (%d)", Cmd->Type);
-            return False;
-        }
-        break;
         }
     }
 
     SDL_RenderPresent(Renderer->SDL);
-    RenderBufReset(&Renderer->Buf);
-
     return True;
 }

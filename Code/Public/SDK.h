@@ -1,10 +1,10 @@
 #if !defined(SDK_H)
 #define SDK_H
 
+#include "Ent.h"
 #include "Math.h"
 #include "Mem.h"
 #include "Types.h"
-#include "Ent.h"
 
 #if defined(WASM)
 #define Export(Name) __attribute__((export_name(Name)))
@@ -17,8 +17,8 @@
 #define ExtraMemSize Mb(2)
 
 // NOTE: `State` is the game state and `ExtraMem` is memory for allocating your own state struct if you need it.
-typedef Void UpdateAndRenderFunction(Void *ExtraMem);
-#define UpdateAndRender(Name) Export("UpdateAndRender") Void Name(Void *ExtraMem)
+typedef Void UpdateAndRenderFunction(Void);
+#define UpdateAndRender(Name) Export("UpdateAndRender") Void Name(Void)
 
 //
 // NOTE: Imports.
@@ -69,10 +69,12 @@ static inline Uint32 GetFileSize(const char *Path)
 Import("AddComp") CompTypeResult AddComp(Usize Size);
 Import("AddEnt") EntResult AddEnt(Void);
 
-Import("EntAddComp") Void EntAddComp(Uint32 EntID, Uint32 TypeID, const Void *Mem);
-Import("EntAddTransform") Void EntAddTransform(Uint32 EntID, CompTransform Transform);
-Import("EntAddRenderable") Void EntAddRenderable(Uint32 EntID, CompRenderable Renderable);
+Import("EntAddComp") Void EntAddComp(EntID EntID, CompID TypeID, const Void *Mem);
+// NOTE: Built-in components.
+// TODO: We could store them as resources in ECS maybe.
+Import("EntAddTransform") Void EntAddTransform(EntID EntID, CompTransform Transform);
+Import("EntAddRenderable") Void EntAddRenderable(EntID EntID, CompRenderable Renderable);
 
-Import("EntGetComp") CompResult EntGetComp(Uint32 EntID, Uint32 TypeID);
+Import("EntGetComp") CompResult EntGetComp(EntID EntID, CompID TypeID);
 
 #endif
