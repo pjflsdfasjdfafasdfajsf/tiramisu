@@ -2,6 +2,7 @@
 // NOTE: WASM Runtime implementation.
 //
 #include "Runtime.h"
+#include "Public/Mem.h"
 #include "SDL.h"
 
 #include "Public/Types.h"
@@ -108,34 +109,54 @@ Bool RtLoadOne(Runtime *Rt, const char *Path)
     // NOTE: Imports.
     //
 
-#define Function(Name, Signature)                                   \
-    Rt->Name = wasm_runtime_lookup_function(Rt->ModuleInst, #Name); \
-    if (!Rt->Name)                                                  \
-    {                                                               \
-        LogCritical("wasm_runtime_lookup_function  ('%s')\n"        \
-                    "NOTE: Runtime expects '%s' to be exported.\n", \
-                    #Name, #Signature);                             \
-        return False;                                               \
+    Rt->UpdateAndRender = wasm_runtime_lookup_function(Rt->ModuleInst, "UpdateAndRender");
+    if (!Rt->UpdateAndRender)
+    {
+        LogCritical("wasm_runtime_lookup_function  ('UpdateAndRender')\n"
+                    "NOTE: Runtime expects 'UpdateAndRender ( )' to be exported.\n");
+        return False;
     }
 
-    Function(UpdateAndRender, Void UpdateAndRender(*State, *ExtraMem, *RenderBuf));
-
-#undef Function
+    Rt->Init = wasm_runtime_lookup_function(Rt->ModuleInst, "Init");
+    if (!Rt->Init)
+    {
+        LogCritical("wasm_runtime_lookup_function  ('Init')\n"
+                    "NOTE: Runtime expects 'Init (  )' to be exported.\n");
+        return False;
+    }
 
     Rt->IsValid = True;
     return True;
 }
 
-Bool RtUpdate(Runtime *Rt)
+Bool RtCallUpdate(Runtime *Rt)
 {
     Assert(Rt);
     Assert(Rt->UpdateAndRender);
     Assert(Rt->ModuleInst);
 
     Uint32 Args[0] = {};
-    if (!wasm_runtime_call_wasm(Rt->ExecEnv, Rt->UpdateAndRender, 0, Args))
+    if (!wasm_runtime_call_wasm(Rt->ExecEnv, Rt->UpdateAndRender,
+                                ArrayCount(Args), Args))
     {
         LogCritical("wasm_runtime_call_wasm  (runtime error): %s\n", wasm_runtime_get_exception(Rt->ModuleInst));
+        return False;
+    }
+
+    return True;
+}
+
+Bool RtCallInit(Runtime *Rt)
+{
+    Assert(Rt);
+    Assert(Rt->Init);
+    Assert(Rt->ModuleInst);
+
+    Uint32 Args[0] = {};
+    if (!wasm_runtime_call_wasm(Rt->ExecEnv, Rt->Init,
+                                ArrayCount(Args), Args))
+    {
+        LogCritical("wasm_runtime_call_wasm  (runtime error during init): %s\n", wasm_runtime_get_exception(Rt->ModuleInst));
         return False;
     }
 

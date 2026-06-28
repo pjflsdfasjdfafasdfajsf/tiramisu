@@ -6,7 +6,7 @@
 
 #include "Types.h"
 
-#define ExtraMemSize Mb(2)
+#define MemSize Mb(2)
 
 // NOTE: This is a simple bump allocator.
 typedef struct

@@ -14,7 +14,12 @@
 #define Import(Name)
 #endif
 
-// NOTE: `State` is the game state and `ExtraMem` is memory for allocating your own state struct if you need it.
+// NOTE: Initialization can be easily implemented with a single UpdateAndRender
+// function but it would require exporting a resource such as GameInitialized
+// which is rather ugly.
+typedef Void InitFunction(Void);
+#define Init(Name) Export("Init") Void Init(Void)
+
 typedef Void UpdateAndRenderFunction(Void);
 #define UpdateAndRender(Name) Export("UpdateAndRender") Void Name(Void)
 

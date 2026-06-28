@@ -1,33 +1,27 @@
-#include "Ent.h"
 #include <SDK.h>
 
-static EntResult Ent;
+Init(Init)
+{
+    {
+        EntResult Ent = EntInit();
 
-// TODO: Global bad
-static Bool IsInitialized = False;
-static CompID TransformID;
-static CompID RenderableID;
+        CompTransform Transform = {
+            .Pos = V2Make(100.0f, 100.0f),
+            .Size = V2Make(100.0f, 100.0f),
+        };
+        EntAddComp(Ent.ID, ResGetVal(ResGetIDCStr(CompTransformName)), &Transform);
+
+        CompRenderable Renderable = {
+            .Type = RenderableType_Rect,
+        };
+        Renderable.Rect.Color = Red;
+        Renderable.Rect.Filled = Filled;
+        EntAddComp(Ent.ID, ResGetVal(ResGetIDCStr(CompRenderableName)), &Renderable);
+    }
+
+    PrintCStr("Hi miguel");
+}
 
 UpdateAndRender(UpdateAndRender)
 {
-    if (!IsInitialized)
-    {
-        TransformID = (CompID)ResGetVal(ResGetIDCStr(CompTransformName));
-        RenderableID = (CompID)ResGetVal(ResGetIDCStr(CompRenderableName));
-
-        Ent = EntInit();
-
-        CompRenderable Renderable = {0};
-        Renderable.Type = RenderableType_Rect;
-        Renderable.Rect.Color = Red;
-        Renderable.Rect.Filled = Filled;
-        EntAddComp(Ent.ID, RenderableID, &Renderable);
-
-        CompTransform Transform = {0};
-        Transform.Pos = V2Make(30.0f, 30.0f);
-        Transform.Size = V2Make(100.0f, 100.0f);
-        EntAddComp(Ent.ID, TransformID, &Transform);
-
-        IsInitialized = True;
-    }
 }

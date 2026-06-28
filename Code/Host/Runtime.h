@@ -11,11 +11,8 @@ typedef struct
     wasm_module_inst_t ModuleInst;
     wasm_exec_env_t ExecEnv;
 
+    wasm_function_inst_t Init;
     wasm_function_inst_t UpdateAndRender;
-
-    wasm_function_inst_t GetState;
-    wasm_function_inst_t GetRenderBuf;
-    wasm_function_inst_t GetExtraMem;
 
     void *Bytes;
 
@@ -29,6 +26,7 @@ Void RtDeinit(Runtime *Rt);
 
 Bool RtLoadOne(Runtime *Rt, const char *Path);
 
-Bool RtUpdate(Runtime *Rt);
+Bool RtCallUpdate(Runtime *Rt);
+Bool RtCallInit(Runtime *Rt);
 
 #endif

@@ -157,7 +157,7 @@ static Uint32 HostReadFile(wasm_exec_env_t ExecEnv, Uint32 PathPtrOffset, Uint32
         return 0;
     }
 
-    if (!Mod->Archive.IsValid)
+    if (!Mod->ZipArchive.IsValid)
     {
         LogCritical("Calling mod is not a valid ZIP archive.\n");
         return 0;
@@ -165,7 +165,7 @@ static Uint32 HostReadFile(wasm_exec_env_t ExecEnv, Uint32 PathPtrOffset, Uint32
 
     SDL_Log("'%s' requested %s\n", Mod->Path, PathBuf);
 
-    ZipEntry Ent = ZipGetEntByName(&Mod->Archive, PathBuf);
+    ZipEntry Ent = ZipGetEntByName(&Mod->ZipArchive, PathBuf);
     if (!Ent.IsValid)
     {
         LogCritical("'%s' not found.\n", PathBuf);
@@ -183,7 +183,7 @@ static Uint32 HostReadFile(wasm_exec_env_t ExecEnv, Uint32 PathPtrOffset, Uint32
         return 0;
     }
 
-    if (!ZipReadEnt(&Mod->Archive, &Ent, Dst, DstSize))
+    if (!ZipReadEnt(&Mod->ZipArchive, &Ent, Dst, DstSize))
     {
         LogCritical("Failed to read decompressed data from ZIP: %s\n", PathBuf);
         return 0;
@@ -268,6 +268,7 @@ static Void HostCompInit(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 Si
 static Void HostEntInit(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset)
 {
     wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
+
     SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
     Assert(App);
 
@@ -468,17 +469,17 @@ static Bool ReadManifest(ZipArchive *Archive, const char *Path)
     return True;
 }
 
-static Bool LoadOneMod(Mod *Mod, const char *ZipPath)
+static Bool LoadOneMod(SDL *App, Mod *Mod, const char *ZipPath)
 {
     Assert(Mod);
     Assert(ZipPath);
 
-    if (Mod->Mem)
+    if (Mod->ArchiveMem)
     {
-        SDL_free((void *)Mod->Mem);
-        Mod->Mem = 0;
-        Mod->Size = 0;
-        SDL_memset(&Mod->Archive, 0, sizeof(Mod->Archive));
+        SDL_free((void *)Mod->ArchiveMem);
+        Mod->ArchiveMem = 0;
+        Mod->ArchiveSize = 0;
+        SDL_memset(&Mod->ZipArchive, 0, sizeof(Mod->ZipArchive));
     }
 
     size_t Size = 0;
@@ -489,26 +490,26 @@ static Bool LoadOneMod(Mod *Mod, const char *ZipPath)
         return False;
     }
 
-    Mod->Mem = (const Uint8 *)File;
-    Mod->Size = Size;
+    Mod->ArchiveMem = (const Uint8 *)File;
+    Mod->ArchiveSize = Size;
 
-    Mod->Archive = ZipOpen(Mod->Mem, Mod->Size);
-    if (!Mod->Archive.IsValid)
+    Mod->ZipArchive = ZipOpen(Mod->ArchiveMem, Mod->ArchiveSize);
+    if (!Mod->ZipArchive.IsValid)
     {
         LogCritical("Failed to parse ZIP archive: %s\n", ZipPath);
         return False;
     }
 
-    if (!ReadManifest(&Mod->Archive, ZipPath))
+    if (!ReadManifest(&Mod->ZipArchive, ZipPath))
     {
         LogCritical("Failed to read manifest.\n");
         return False;
     }
 
     ZipEntry Wasm = {0};
-    for (Uint32 I = 0; I < Mod->Archive.Count; ++I)
+    for (Uint32 I = 0; I < Mod->ZipArchive.Count; ++I)
     {
-        ZipEntry Ent = ZipGetEntByIndex(&Mod->Archive, I);
+        ZipEntry Ent = ZipGetEntByIndex(&Mod->ZipArchive, I);
         if (Ent.IsValid && ZipEntEndsWith(&Ent, ".wasm"))
         {
             Wasm = Ent;
@@ -529,7 +530,7 @@ static Bool LoadOneMod(Mod *Mod, const char *ZipPath)
         return False;
     }
 
-    if (!ZipReadEnt(&Mod->Archive, &Wasm, WasmBuf, Wasm.UncompressedSize))
+    if (!ZipReadEnt(&Mod->ZipArchive, &Wasm, WasmBuf, Wasm.UncompressedSize))
     {
         LogCritical("Failed to decompress wasm from zip %s\n", ZipPath);
         SDL_free(WasmBuf);
@@ -564,6 +565,22 @@ static Bool LoadOneMod(Mod *Mod, const char *ZipPath)
         return False;
     }
 
+    if (Mod->Rt.ModuleInst)
+    {
+        wasm_runtime_set_custom_data(Mod->Rt.ModuleInst, App);
+    }
+
+    // NOTE: if this is 0 that means it is the very first time we are
+    // loading this module
+    if (Mod->LastWriteTime == 0)
+    {
+        if (!RtCallInit(&Mod->Rt))
+        {
+            LogCritical("RtCallInit failed on %s\n", ZipPath);
+            return False;
+        }
+    }
+
     return True;
 }
 
@@ -585,19 +602,10 @@ static SDL_EnumerationResult SDLCALL EnumerateDirectoryCallback(Void *UserData, 
         SDL_snprintf(Mod->Path, sizeof(Mod->Path), "%s%s", DirName, FileName);
 
         Mod->Rt = RtInit();
-        if (Mod->Rt.IsValid && LoadOneMod(Mod, Mod->Path))
+        if (Mod->Rt.IsValid && LoadOneMod(App, Mod, Mod->Path))
         {
             Mod->LastWriteTime = GetFileModTime(Mod->Path);
-            Mod->ExtraMem = SDL_calloc(1, ExtraMemSize);
-
-            if (Mod->ExtraMem)
-            {
-                App->ModCount++;
-            }
-            else
-            {
-                LogCritical("Out of memory!\n");
-            }
+            App->ModCount++;
         }
     }
 
@@ -617,10 +625,6 @@ Void Update(SDL *App)
     for (Uint32 I = 0; I < App->ModCount; ++I)
     {
         Mod *Mod = &App->Mods[I];
-        if (Mod->Rt.ModuleInst)
-        {
-            wasm_runtime_set_custom_data(Mod->Rt.ModuleInst, App);
-        }
 
         Int64 CurrentTime = GetFileModTime(Mod->Path);
         if (CurrentTime > Mod->LastWriteTime && CurrentTime)
@@ -628,38 +632,18 @@ Void Update(SDL *App)
             SDL_Delay(50);
             SDL_Log("Reloading: %s\n", Mod->Path);
 
-            // // NOTE: Need to save ExtraMem since that's where state is stored
-            // if (Mod->Rt.ModuleInst && Mod->Rt.ExtraMem)
-            // {
-            //     Void *NativeExtraMem = wasm_runtime_addr_app_to_native(Mod->Rt.ModuleInst, Mod->Rt.ExtraMem);
-            //     if (NativeExtraMem)
-            //     {
-            //         SDL_memcpy(Mod->ExtraMem, NativeExtraMem, ExtraMemSize);
-            //     }
-            // }
-
             RtDeinit(&Mod->Rt);
             Mod->Rt = RtInit();
 
-            if (LoadOneMod(Mod, Mod->Path))
+            if (LoadOneMod(App, Mod, Mod->Path))
             {
                 Mod->LastWriteTime = CurrentTime;
-
-                // // NOTE: And restore the saved ExtraMem
-                // if (Mod->Rt.ModuleInst && Mod->Rt.ExtraMem)
-                // {
-                //     Void *NativeExtraMem = wasm_runtime_addr_app_to_native(Mod->Rt.ModuleInst, Mod->Rt.ExtraMem);
-                //     if (NativeExtraMem)
-                //     {
-                //         SDL_memcpy(NativeExtraMem, Mod->ExtraMem, ExtraMemSize);
-                //     }
-                // }
             }
         }
         // NOTE: This handles the case where you got an error on compilation
         if (Mod->Rt.IsValid)
         {
-            if (!RtUpdate(&Mod->Rt))
+            if (!RtCallUpdate(&Mod->Rt))
             {
                 Assert(0);
             }
@@ -779,17 +763,12 @@ SDL Init()
     }
 
     Game->Rt = RtInit();
-    if (!Game->Rt.IsValid || !LoadOneMod(Game, Game->Path))
+    if (!Game->Rt.IsValid || !LoadOneMod(&Result, Game, Game->Path))
     {
         Assert(0);
     }
 
     Game->LastWriteTime = GetFileModTime(Game->Path);
-    Game->ExtraMem = SDL_calloc(1, ExtraMemSize);
-    if (!Game->ExtraMem)
-    {
-        Assert(0);
-    }
     Result.ModCount = 1;
 
     //

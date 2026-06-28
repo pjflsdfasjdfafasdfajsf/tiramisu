@@ -22,11 +22,10 @@ typedef struct
     char Path[1024];
 
     Int64 LastWriteTime;
-    Void *ExtraMem;
 
-    const Uint8 *Mem;
-    Usize Size;
-    ZipArchive Archive;
+    const Uint8 *ArchiveMem;
+    Usize ArchiveSize;
+    ZipArchive ZipArchive;
 } Mod;
 
 typedef struct
