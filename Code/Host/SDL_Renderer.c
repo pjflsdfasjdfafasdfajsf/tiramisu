@@ -125,8 +125,8 @@ Bool RendererDraw(World *World, Renderer *Renderer)
         return False;
     }
 
-    CompID TransformID = CompIDInvalid;
-    CompID RenderableID = CompIDInvalid;
+    CompID TransformID = CompID_Invalid;
+    CompID RenderableID = CompID_Invalid;
 
     for (Uint32 I = 0; I < World->CompTypeCount; ++I)
     {
@@ -188,7 +188,7 @@ Bool RendererDraw(World *World, Renderer *Renderer)
                     Transform->Size.H,
                 };
 
-                if (Renderable->Rect.Tex == TexHandleInvalid)
+                if (Renderable->Rect.Tex == TexHandle_Invalid)
                 {
                     // NOTE: Untextured Rectangle
                     if (!SDL_SetRenderDrawColor(Renderer->SDL, Renderable->Rect.Color.R, Renderable->Rect.Color.G, Renderable->Rect.Color.B, Renderable->Rect.Color.A))

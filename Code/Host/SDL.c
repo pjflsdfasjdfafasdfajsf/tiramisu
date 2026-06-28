@@ -1,9 +1,11 @@
 #include "SDL.h"
+#include "Host/Ent.h"
 #include "KeyValue.h"
 #include "Public/Ent.h"
 #include "Runtime.h"
 #include "SDL_Renderer.h"
 #include "STB.h"
+#include "wasm_export.h"
 
 #define GameZip "Game.zip"
 
@@ -194,7 +196,52 @@ static Uint32 HostReadFile(wasm_exec_env_t ExecEnv, Uint32 PathPtrOffset, Uint32
 // NOTE: ECS
 //
 
-static Void HostAddComp(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 Size)
+// NOTE: Res
+
+// TODO
+static ResID HostResGetID(wasm_exec_env_t ExecEnv, Uint32 NamePtrOffset, Uint32 NameLen)
+{
+    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
+    if (!wasm_runtime_validate_app_str_addr(ModuleInst, NamePtrOffset))
+    {
+        LogCritical("Resource name memory bounds violation.\n");
+        return ResID_Invalid;
+    }
+
+    const char *Name = (const char *)wasm_runtime_addr_app_to_native(ModuleInst, NamePtrOffset);
+    if (!Name || NameLen == 0)
+    {
+        LogCritical("Invalid resource name pointer or length.\n");
+        return ResID_Invalid;
+    }
+
+    SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
+    Assert(App);
+
+    return ResGetID(&App->World, Name, NameLen);
+}
+
+static Uint32 HostResGetVal(wasm_exec_env_t ExecEnv, Uint32 ResID)
+{
+    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
+    SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
+    Assert(App);
+
+    return ResGetVal(&App->World, ResID);
+}
+
+static Uint32 HostResSetVal(wasm_exec_env_t ExecEnv, Uint32 ResID, Uint32 Val)
+{
+    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
+    SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
+    Assert(App);
+
+    return ResSetVal(&App->World, ResID, Val);
+}
+
+// NOTE: Comp
+
+static Void HostCompInit(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 Size)
 {
     wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
     SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
@@ -213,10 +260,12 @@ static Void HostAddComp(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 Siz
         return;
     }
 
-    *Result = AddComp(&App->World, Size);
+    *Result = CompInit(&App->World, Size);
 }
 
-static Void HostAddEnt(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset)
+// NOTE: Ent
+
+static Void HostEntInit(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset)
 {
     wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
     SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
@@ -235,10 +284,10 @@ static Void HostAddEnt(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset)
         return;
     }
 
-    *Result = AddEnt(&App->World);
+    *Result = EntInit(&App->World);
 }
 
-static Void HostEntAddComp(wasm_exec_env_t ExecEnv, Uint32 EntID, Uint32 TypeID, Uint32 MemOffset)
+static Bool HostEntAddComp(wasm_exec_env_t ExecEnv, Uint32 EntID, Uint32 TypeID, Uint32 MemOffset)
 {
     wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
     SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
@@ -249,18 +298,18 @@ static Void HostEntAddComp(wasm_exec_env_t ExecEnv, Uint32 EntID, Uint32 TypeID,
     if (TypeID >= World->CompTypeCount)
     {
         LogCritical("Invalid Comp Type ID %u.\n", TypeID);
-        return;
+        return False;
     }
 
     Usize Size = World->CompSizes[TypeID];
     if (!wasm_runtime_validate_app_addr(ModuleInst, MemOffset, Size))
     {
         LogCritical("Comp input memory bounds violation.\n");
-        return;
+        return False;
     }
 
     const Void *Mem = wasm_runtime_addr_app_to_native(ModuleInst, MemOffset);
-    EntAddComp(World, EntID, TypeID, Mem);
+    return EntAddComp(World, EntID, TypeID, Mem);
 }
 
 static Void HostEntGetComp(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 EntID, Uint32 TypeID)
@@ -283,38 +332,6 @@ static Void HostEntGetComp(wasm_exec_env_t ExecEnv, Uint32 OutPtrOffset, Uint32 
     }
 
     *Result = EntGetComp(&App->World, EntID, TypeID);
-}
-
-static Void HostEntAddTransform(wasm_exec_env_t ExecEnv, Uint32 EntID, Uint32 TransformOffset)
-{
-    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
-    SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
-    Assert(App);
-
-    if (!wasm_runtime_validate_app_addr(ModuleInst, TransformOffset, sizeof(CompTransform)))
-    {
-        LogCritical("Component input memory bounds violation.\n");
-        return;
-    }
-
-    const CompTransform *Transform = (const CompTransform *)wasm_runtime_addr_app_to_native(ModuleInst, TransformOffset);
-    EntAddTransform(&App->World, EntID, Transform);
-}
-
-static Void HostEntAddRenderable(wasm_exec_env_t ExecEnv, Uint32 EntID, Uint32 RenderableOffset)
-{
-    wasm_module_inst_t ModuleInst = wasm_runtime_get_module_inst(ExecEnv);
-    SDL *App = (SDL *)wasm_runtime_get_custom_data(ModuleInst);
-    Assert(App);
-
-    if (!wasm_runtime_validate_app_addr(ModuleInst, RenderableOffset, sizeof(CompRenderable)))
-    {
-        LogCritical("Component input memory bounds violation.\n");
-        return;
-    }
-
-    const CompRenderable *Renderable = (const CompRenderable *)wasm_runtime_addr_app_to_native(ModuleInst, RenderableOffset);
-    EntAddRenderable(&App->World, EntID, Renderable);
 }
 
 //
@@ -691,13 +708,29 @@ SDL Init()
         Assert(0);
     }
 
-    Assert(sizeof(CompTransform) <= MaxCompSize);
-    Result.World.CompSizes[Result.World.CompTypeCount] = sizeof(CompTransform);
-    Result.World.CompTypeCount++;
+    //
+    // NOTE: Built-in components.
+    //
 
-    Assert(sizeof(CompRenderable) <= MaxCompSize);
-    Result.World.CompSizes[Result.World.CompTypeCount] = sizeof(CompRenderable);
-    Result.World.CompTypeCount++;
+    CompTypeResult TransformComp = CompInit(&Result.World, sizeof(CompTransform));
+    if (TransformComp.IsValid)
+    {
+        ResID ID = ResGetID(&Result.World, CompTransformName, sizeof(CompTransformName) - 1);
+        if (ID != ResID_Invalid)
+        {
+            ResSetVal(&Result.World, ID, TransformComp.ID);
+        }
+    }
+
+    CompTypeResult RenderableComp = CompInit(&Result.World, sizeof(CompRenderable));
+    if (RenderableComp.IsValid)
+    {
+        ResID ID = ResGetID(&Result.World, CompRenderableName, sizeof(CompRenderableName) - 1);
+        if (ID != ResID_Invalid)
+        {
+            ResSetVal(&Result.World, ID, RenderableComp.ID);
+        }
+    }
 
     // ApplyInputBindings(&Result);
 
@@ -722,12 +755,15 @@ SDL Init()
         // {"AllocTexture", (void *)HostAllocTexture, "(ii)i", 0},
         {"ReadFile", (void *)HostReadFile, "(iiii)i", 0},
         // NOTE: ECS
-        {"AddComp", (void *)HostAddComp, "(ii)", 0},
-        {"AddEnt", (void *)HostAddEnt, "(i)", 0},
-        {"EntAddComp", (void *)HostEntAddComp, "(iii)", 0},
-        {"EntAddTransform", (void *)HostEntAddTransform, "(ii)", 0},
-        {"EntAddRenderable", (void *)HostEntAddRenderable, "(ii)", 0},
-        {"EntGetComp", (void *)HostEntGetComp, "(iii)", 0}};
+        {"CompInit", (void *)HostCompInit, "(ii)", 0},
+
+        {"EntInit", (void *)HostEntInit, "(i)", 0},
+        {"EntAddComp", (void *)HostEntAddComp, "(iii)i", 0},
+        {"EntGetComp", (void *)HostEntGetComp, "(iii)", 0},
+
+        {"ResGetID", (void *)HostResGetID, "(ii)i", 0},
+        {"ResGetVal", (void *)HostResGetVal, "(i)i", 0},
+        {"ResSetVal", (void *)HostResSetVal, "(ii)", 0}};
     if (!wasm_runtime_register_natives("env", Natives, ArrayCount(Natives)))
     {
         Assert(0);

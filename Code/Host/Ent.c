@@ -1,8 +1,12 @@
 #include "Ent.h"
+#include "Public/Math.h"
+#include "Public/Mem.h"
 #include "SDL.h"
 
-CompTypeResult AddComp(World *World, Uint32 Size)
+CompTypeResult CompInit(World *World, Uint32 Size)
 {
+    Assert(World);
+
     CompTypeResult Result = {0};
 
     if (World->CompTypeCount >= MaxCompTypes)
@@ -30,8 +34,10 @@ CompTypeResult AddComp(World *World, Uint32 Size)
     return Result;
 }
 
-EntResult AddEnt(World *World)
+EntResult EntInit(World *World)
 {
+    Assert(World);
+
     EntResult Result = {0};
 
     for (Uint32 I = 0; I < MaxEnts; ++I)
@@ -53,6 +59,9 @@ EntResult AddEnt(World *World)
 
 Bool EntAddComp(World *World, Uint32 EntID, Uint32 TypeID, const Void *Mem)
 {
+    Assert(World);
+    Assert(Mem);
+
     if (EntID >= MaxEnts)
     {
         LogCritical("Invalid Entity ID %u.\n", EntID);
@@ -85,8 +94,9 @@ Bool EntAddComp(World *World, Uint32 EntID, Uint32 TypeID, const Void *Mem)
 
 CompResult EntGetComp(World *World, Uint32 EntID, Uint32 TypeID)
 {
+    Assert(World);
+
     CompResult Result = {0};
-    Result.IsValid = False;
 
     if (EntID >= MaxEnts || TypeID >= World->CompTypeCount)
     {
@@ -103,88 +113,69 @@ CompResult EntGetComp(World *World, Uint32 EntID, Uint32 TypeID)
     return Result;
 }
 
-Bool EntAddTransform(World *World, Uint32 EntID, const CompTransform *Transform)
+//
+// NOTE: Res
+//
+
+ResID ResGetID(World *World, const char *NamePtr, Usize NameLen)
 {
-    if (EntID >= MaxEnts)
+    Assert(World);
+
+    if (!NamePtr || NameLen == 0 || NameLen >= MaxResNameLen)
     {
-        LogCritical("Invalid Entity ID %u.\n", EntID);
-        return False;
+        LogCritical("Invalid resource registration attempt.\n");
+        return ResID_Invalid;
     }
 
-    if (!World->EntActive[EntID])
+    Uint32 Hash = HashStr(NamePtr, NameLen);
+    // TODO: Linear search bad :(
+    for (Uint32 I = 0; I < World->ResCount; ++I)
     {
-        LogCritical("Entity %u is inactive.\n", EntID);
-        return False;
-    }
-
-    CompID TransformTypeID = MaxCompTypes;
-    for (Uint32 I = 0; I < World->CompTypeCount; ++I)
-    {
-        // TODO: HACK
-        if (World->CompSizes[I] == sizeof(CompTransform))
+        if (World->Res[I].Hash == Hash)
         {
-            TransformTypeID = I;
-            break;
+            return I;
         }
     }
 
-    if (TransformTypeID >= MaxCompTypes)
+    if (World->ResCount >= MaxRes)
     {
-        LogCritical("CompTransform component type is not registered.\n");
-        return False;
+        LogCritical("Maximum res capacity (%u) reached", MaxRes);
+        return ResID_Invalid;
     }
 
-    if (!Transform)
-    {
-        LogCritical("Invalid component memory source.\n");
-        return False;
-    }
+    ResID Result = World->ResCount++;
+    World->Res[Result] = (Res){0};
 
-    Usize Size = World->CompSizes[TransformTypeID];
-    SDL_memcpy(World->CompData[EntID][TransformTypeID], Transform, Size);
-    World->CompPresent[EntID][TransformTypeID] = True;
-    return True;
+    World->Res[Result].Hash = Hash;
+    MemCopy(World->ResNames[Result], NamePtr, NameLen);
+    MemNullTerminate(World->ResNames[Result], sizeof(World->ResNames[Result]), NameLen);
+
+    return Result;
 }
 
-Bool EntAddRenderable(World *World, Uint32 EntID, const CompRenderable *Renderable)
+Uint32 ResGetVal(const World *World, ResID ResID)
 {
-    if (EntID >= MaxEnts)
+    Assert(World);
+
+    if (ResID >= World->ResCount)
     {
-        LogCritical("Invalid Entity ID %u.\n", EntID);
-        return False;
+        LogCritical("Attempt to read out-of-bounds ResID: %u\n", ResID);
+        return 0;
     }
 
-    if (!World->EntActive[EntID])
+    return World->Res[ResID].Value;
+}
+
+Bool ResSetVal(World *World, Uint32 ResID, Uint32 Value)
+{
+    Assert(World);
+
+    if (ResID >= World->ResCount)
     {
-        LogCritical("Entity %u is inactive.\n", EntID);
-        return False;
+        LogCritical("Attempt to read out-of-bounds ResID: %u\n", ResID);
+        return 0;
     }
 
-    CompID RenderableTypeID = CompIDInvalid;
-    for (Uint32 I = 0; I < World->CompTypeCount; ++I)
-    {
-        // TODO: HACK
-        if (World->CompSizes[I] > sizeof(CompTransform))
-        {
-            RenderableTypeID = I;
-            break;
-        }
-    }
-
-    if (RenderableTypeID >= MaxCompTypes)
-    {
-        LogCritical("CompRenderable component type is not registered.\n");
-        return False;
-    }
-
-    if (!Renderable)
-    {
-        LogCritical("Invalid component memory source.\n");
-        return False;
-    }
-
-    Usize Size = World->CompSizes[RenderableTypeID];
-    SDL_memcpy(World->CompData[EntID][RenderableTypeID], Renderable, Size);
-    World->CompPresent[EntID][RenderableTypeID] = True;
+    World->Res[ResID].Value = Value;
     return True;
 }

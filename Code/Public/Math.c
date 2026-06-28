@@ -1,4 +1,5 @@
 #include "Math.h"
+#include "Public/Mem.h"
 #include "Types.h"
 
 #define EPSILON 1.19209289e-7
@@ -175,17 +176,27 @@ V2 ToScreen(Camera Camera, V2 World)
 #define HashInitial 2166136261u
 #define HashPrime 16777619u
 
-Uint32 HashCStr(const char *CStr)
+Uint32 HashStr(const char *Str, Usize Len)
 {
+    if (Len > 0)
+    {
+        Assert(Str);
+    }
+
     Uint32 Result = HashInitial;
 
-    while (*CStr)
+    for (Usize I = 0; I < Len; ++I)
     {
-        Result ^= (Uint32)(*CStr++);
+        Result ^= (Uint32)Str[I];
         Result *= HashPrime;
     }
 
     return Result;
+}
+
+Uint32 HashCStr(const char *CStr)
+{
+    return HashStr(CStr, CStrLen(CStr));
 }
 
 Uint32 HashCombine(Uint32 Parent, Uint32 Child)

@@ -137,7 +137,9 @@ V2 ToScreen(Camera Camera, V2 World);
 //
 
 // NOTE: FNV-1a.
+Uint32 HashStr(const char *Str, Usize Len);
 Uint32 HashCStr(const char *CStr);
+
 Uint32 HashCombine(Uint32 Parent, Uint32 Child);
 
 // NOTE: Generic Math

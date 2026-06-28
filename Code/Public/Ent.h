@@ -9,10 +9,13 @@
 #define MaxCompSize 32
 
 typedef Uint32 CompID;
-#define CompIDInvalid 0xFFFFFFFF
+#define CompID_Invalid 0xFFFFFFFF
 
 typedef Uint32 EntID;
-#define EntIDInvalid 0xFFFFFFFF
+#define EntID_Invalid 0xFFFFFFFF
+
+typedef Uint32 ResID;
+#define ResID_Invalid 0xFFFFFFFF
 
 typedef struct CompTypeResult
 {
@@ -45,8 +48,10 @@ typedef struct CompTransform
     V2 Size;
 } CompTransform;
 
+#define CompTransformName "CompTransform"
+
 typedef Uint32 TexHandle;
-#define TexHandleInvalid 0
+#define TexHandle_Invalid 0
 
 enum
 {
@@ -121,5 +126,7 @@ typedef struct CompRenderable
         } DebugText;
     };
 } CompRenderable;
+
+#define CompRenderableName "CompRenderable"
 
 #endif

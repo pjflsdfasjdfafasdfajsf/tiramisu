@@ -64,15 +64,27 @@ static inline Uint32 GetFileSize(const char *Path)
 // NOTE: ECS
 //
 
-Import("AddComp") CompTypeResult AddComp(Usize Size);
-Import("AddEnt") EntResult AddEnt(Void);
+// TODO: Make it part of the SDK
+Import("CompInit") CompTypeResult CompInit(Usize Size);
+Import("EntInit") EntResult EntInit(Void);
 
-Import("EntAddComp") Void EntAddComp(EntID EntID, CompID TypeID, const Void *Mem);
-// NOTE: Built-in components.
-// TODO: We could store them as resources in ECS maybe.
-Import("EntAddTransform") Void EntAddTransform(EntID EntID, CompTransform Transform);
-Import("EntAddRenderable") Void EntAddRenderable(EntID EntID, CompRenderable Renderable);
-
+Import("EntAddComp") Bool EntAddComp(EntID EntID, CompID TypeID, const Void *Mem);
 Import("EntGetComp") CompResult EntGetComp(EntID EntID, CompID TypeID);
+
+Import("ResGetID") ResID ResGetID(const char *NamePtr, Usize NameLen);
+Import("ResGetVal") Uint32 ResGetVal(ResID ResID);
+Import("ResSetVal") Void ResSetVal(ResID ResID, Uint32 Val);
+
+static inline ResID ResGetIDCStr(const char *Name)
+{
+    Assert(Name);
+
+    if (!Name)
+    {
+        return ResID_Invalid;
+    }
+
+    return ResGetID(Name, CStrLen(Name));
+}
 
 #endif

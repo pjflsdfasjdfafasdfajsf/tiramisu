@@ -46,7 +46,11 @@ typedef struct
     //         ExampleMod.wasm
     Mod Mods[512];
     Uint32 ModCount;
-
+    // TODO: I don't know if it's best way to do that or the other way.
+    // By 'other way' I mean passing this around to everyone as parameter in
+    // UpdateAndRender.
+    //
+    // UPDATE: The other way is better
     World World;
 } SDL;
 
