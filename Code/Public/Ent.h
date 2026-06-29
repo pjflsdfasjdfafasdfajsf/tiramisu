@@ -53,13 +53,6 @@ typedef struct CompTransform
 typedef Uint32 TexHandle;
 #define TexHandle_Invalid 0
 
-enum
-{
-    Filled = True,
-    // NOTE: Draws only the rectangle outline
-    Hollow = False,
-};
-
 typedef enum RenderableType
 {
     RenderableType_None,

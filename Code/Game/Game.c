@@ -13,9 +13,10 @@ Init(Init)
 
         CompRenderable Renderable = {
             .Type = RenderableType_Rect,
-        };
-        Renderable.Rect.Color = Red;
-        Renderable.Rect.Filled = Filled;
+            .Rect = {
+                .Color = Red,
+                .Filled = True,
+            }};
         EntAddComp(Ent.ID, CompRenderableHash, &Renderable);
     }
 }
