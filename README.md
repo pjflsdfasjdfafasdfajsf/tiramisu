@@ -11,3 +11,4 @@ make -f Linux.make
 The final executable will be available in `Build` directory.
 
 The example mod using official SDK headers is available in a [separate repository](https://github.com/pjflsdfasjdfafasdfajsf/GameExampleMod).
+(CURRENTLY OUT OF DATE SEE ExampleMod DIR!!)
