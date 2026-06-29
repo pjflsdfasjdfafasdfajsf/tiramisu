@@ -67,9 +67,11 @@ static inline Uint32 GetFileSize(const char *Path)
 
 //
 // NOTE: ECS
+// TODO: This could have been as part of SDK, but it is instead is implemented
+// on host and imported here since there's one world for every module. It CAN
+// be part of SDK but it requires a lot of fuckery.
 //
 
-// TODO: Make it part of the SDK
 Import("CompInit") CompTypeResult CompInit(Uint32 Hash, Usize Size);
 Import("EntInit") EntResult EntInit(Void);
 
