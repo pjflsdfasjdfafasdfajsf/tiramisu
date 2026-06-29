@@ -18,8 +18,8 @@ typedef struct
 
 MemAlloc MemAllocInit(void *Mem, Uint32 Cap);
 
-// NOTE: If you stumbled upont this accidentally -- use MemAllocPush. This
-// function is for more complex usecases where you need alignment.
+// NOTE: If you stumbled upon this accidentally -- use MemAllocPush. This
+// function is for more complex usecases when you need alignment.
 Void *MemAllocPushEx(MemAlloc *MemAlloc, Uint32 Bytes, Uint32 Align);
 Void *MemAllocPush(MemAlloc *MemAlloc, Uint32 Bytes);
 
@@ -35,7 +35,6 @@ typedef struct
     Usize Size;
     Usize Pos;
 
-    // NOTE: Not used yet
     Uint32 BitBuf;
     Uint32 BitCount;
 
