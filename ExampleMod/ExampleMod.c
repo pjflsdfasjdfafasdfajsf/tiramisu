@@ -13,11 +13,13 @@ Init(Init)
     EntAddComp(Ent.ID, CompTransformHash, &Transform);
 
     CompRenderable Renderable = {
-        .Type = RenderableType_Rect,
-    };
-    Renderable.Rect.Color = White;
-    Renderable.Rect.Filled = Filled;
-    
+        .Type = RenderableType_DebugText,
+        .DebugText = {
+            .Color = White,
+            .Scale = V2Make(2.0f, 2.0f),
+            .Str = "Hello Example Mod!"
+        }};
+
     EntAddComp(Ent.ID, CompRenderableHash, &Renderable);
 }
 

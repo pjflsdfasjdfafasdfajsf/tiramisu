@@ -6,7 +6,7 @@
 
 #define MaxEnts 32
 #define MaxCompTypes 8
-#define MaxCompSize 32
+#define MaxCompSize Kb(1)
 
 typedef Uint32 CompID;
 #define CompID_Invalid 0xFFFFFFFF
@@ -120,9 +120,8 @@ typedef struct CompRenderable
             // NOTE: Scale multiplier.
             V2 Scale;
 
-            Uint32 StrLen;
             // NOTE: The final newline is not appended!
-            char Str[];
+            char Str[64];
         } DebugText;
     };
 } CompRenderable;
