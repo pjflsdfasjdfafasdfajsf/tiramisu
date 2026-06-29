@@ -1049,6 +1049,11 @@ Bool Poll(SDL *App)
 
         case SDL_EVENT_KEY_DOWN:
         {
+            if (Ev.key.repeat)
+            {
+                break;
+            }
+
             SDL_Scancode Scancode = Ev.key.scancode;
             if (Scancode > 0 && Scancode < SDL_SCANCODE_COUNT)
             {
