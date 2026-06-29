@@ -40,12 +40,6 @@ static inline Void PrintCStr(const char *Str)
     PrintLine(Str, CStrLen(Str));
 }
 
-// NOTE: It is highly recommend to minimize calls to this function. One of the
-// ways you could do that is texture atlases, the whole Renderer API is pretty
-// much built around it already. You can look in Example Mod for details.
-//
-// Supported image formats: PNG, JPEG, TGA, BMP, PSD, GIF, HDR, PIC.
-// Import("AllocTexture") TexHandle AllocTexture(const Void *Mem, Uint32 Size);
 // NOTE: If DstPtr or DstSize is 0 this returns the files uncompressed size.
 // Otherwise it returns the number of bytes read.
 Import("ReadFile") Uint32 ReadFile(const char *PathPtr, Uint32 PathLen, Void *DstPtr, Uint32 DstSize);
