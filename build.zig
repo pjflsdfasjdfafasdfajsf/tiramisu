@@ -12,6 +12,27 @@ pub fn build(b: *std.Build) void {
     });
 
     //
+    // NOTE: SDK
+    //
+
+    const sdk = b.addLibrary(.{
+        .name = "SDK",
+        .root_module = b.createModule(.{
+            .optimize = optimize,
+            .target = target,
+            .link_libc = false,
+        }),
+        .linkage = .static,
+    });
+    sdk.root_module.addCSourceFiles(.{
+        .files = &.{
+            "Code/Public/Ent.c",
+            "Code/Public/Math.c",
+            "Code/Public/Mem.c",
+        },
+    });
+
+    //
     // NOTE: Host
     //
 
@@ -28,11 +49,12 @@ pub fn build(b: *std.Build) void {
             "Code/Host/Main.c",
             "Code/Host/SDL.c",
             "Code/Host/SDL_Renderer.c",
-            "Code/Host/STB.c",
+            "Code/Host/Ent.c",
         },
     });
     host.root_module.addIncludePath(b.path("Code"));
     host.root_module.linkLibrary(sdl.artifact("SDL3"));
+    host.root_module.linkLibrary(sdk);
 
     b.installArtifact(host);
 }

@@ -1,8 +1,8 @@
 #include "Math.h"
-#include "Public/Mem.h"
 #include "Types.h"
+#include "Mem.h"
 
-#define EPSILON 1.19209289e-7
+#define Epsilon 1.19209289e-7
 
 //
 // NOTE: Color
@@ -65,7 +65,7 @@ Float32 V2Len(V2 X)
 V2 V2Norm(V2 X)
 {
     Float32 Len = V2Len(X);
-    if (Len < EPSILON)
+    if (Len < Epsilon)
     {
         return V2Zero;
     }
