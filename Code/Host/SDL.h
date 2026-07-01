@@ -3,7 +3,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "Zip.h"
+#include "Public/Types.h"
 
 enum
 {

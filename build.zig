@@ -143,7 +143,7 @@ pub fn build(b: *std.Build) void {
         \\
         // TODO: getPath4 just makes it kind of ugly here but I guess could be
         // used later.
-    , .{sdl.path("include").getPath(b)}));
+    , .{sdl.builder.dependency("sdl", .{}).path("include").getPath(b)}));
 
     const update_compile_flags = b.addUpdateSourceFiles();
     update_compile_flags.addCopyFileToSource(compile_flags, "compile_flags.txt");
